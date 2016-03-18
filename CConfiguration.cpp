@@ -117,6 +117,7 @@ void CConfiguration::calcMobilityForces(){
     //calculate mobility forces from potential Epot - Unified version that includes 2ndOrder if k is larger than or equal 0.2 b , except if ranPot is activated.
     double r_abs = 0;
     double r_i = 0, r_k = 0;
+    array<int,4> r_is, r_ks;
     double utmp = 0, frtmp = 0;     //temporary "hilfsvariables"
     double Epot = 0;
     double z1, z2;
@@ -144,8 +145,8 @@ void CConfiguration::calcMobilityForces(){
             r_ks[rodi+1] = r_ks[rodi] - _b_array[k][rodi]; 
             r_is[rodi+1] = r_is[rodi] - _b_array[i][rodi]; 
         }
-        for (int nk = 0; nk < 4; nk++){
-            for (int ni = 0; ni < 4; ni++){
+        for (int nk = 0; nk < r_is.size(); nk++){
+            for (int ni = 0; ni < r_ks.size(); ni++){
                 r_i = r_is[ni];
                 r_k = r_ks[nk];
 
