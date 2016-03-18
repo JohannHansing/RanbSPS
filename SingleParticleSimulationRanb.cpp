@@ -1,7 +1,8 @@
 #include "headers/SingleParticleSimulationRanb.h"
 
-
+#define ifdebug(x) 
 using namespace std;
+
 
 
 int main(int argc, const char* argv[]){
@@ -115,11 +116,7 @@ int main(int argc, const char* argv[]){
             if (stepcount%trajout == 0) {
                 std::vector<double> ppos = conf.getppos();
                 trajectoryfile << fixed << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;
-                cout << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;
-            }
-            if (stepcount%1000 == 0) {
-                std::vector<double> ppos = conf.getppos();
-                cout << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;
+                ifdebug(cout << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;)
             }
         }
         

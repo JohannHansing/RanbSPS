@@ -17,7 +17,7 @@
 #include "CPolymers.h"
 
 
-#define ifdebug(x) x
+#define ifdebug(x) 
 
 using namespace std;
 
@@ -106,12 +106,9 @@ private:
     void updateRanb(int axis, int exitmarker){
         // ROTATE http://en.cppreference.com/w/cpp/algorithm/rotate
         //copy neighbor boxsize to _boxsize for particle box.
-        //TODO del
-        cout << "Update Ranb\naxis " << axis << "  --  exitmarker " << exitmarker << endl;
-        //TODO tmp
+        ifdebug(cout << "Update Ranb\naxis " << axis << "  --  exitmarker " << exitmarker << endl;)
         double newb = _pradius + ran_gamma();
-        //TODO del
-        cout << "*" << newb << endl;
+        ifdebug(cout << "*" << newb << endl;)
         if (exitmarker==1){
             // rotation to the left
             std::rotate(_b_array[axis].begin(), _b_array[axis].begin() + 1, _b_array[axis].end());
