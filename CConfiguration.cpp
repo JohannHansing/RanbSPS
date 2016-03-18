@@ -10,49 +10,36 @@ CConfiguration::CConfiguration(){
 }
 
 CConfiguration::CConfiguration(
-        double timestep,  double potRange,  double potStrength, double rodDistance, const bool potMod,
-        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi, double hpi_u, double hpi_k, bool ranRod, double n_rods){
+        string distribution, double timestep,  double potRange,  double potStrength, const bool potMod,
+        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi){
     _potRange = potRange;
     _potStrength = potStrength;
     _pradius = psize/2;
     _timestep = timestep;
-    _rodDistance = rodDistance;
     _potMod = potMod;
-    _ranRod = ranRod;
-    _n_rods = n_rods;
     _LJPot = (steric == false) && (psize != 0);
     _ranU = ranU;
     _poly = CPolymers();
-    _hpi = hpi;
     _upot = 0;
     _mu_sto = sqrt( 2 * _timestep );                 //timestep for stochastic force
-    _hpi = hpi; 
-    _hpi_u = hpi_u;
-    _hpi_k = hpi_k;
     for (int i = 0; i < 3; i++){
-        _ppos[i] = _resetpos;
-        _startpos[i] = _resetpos;
+        _ppos[i] = 5;
+        _startpos[i] = 5;
         _entryside[i] = 0;
         _wallcrossings[i] = 0;
         _boxCoord[i] = 0;
-        _prevpos[i] = _resetpos;
+        _prevpos[i] = 5;
     }
-
-    if (posHisto) initPosHisto();
 
     if (_ranU) {
        cout << "TODOOOOO" << endl;
     }
-
+    
+    initRanb();
 
     // seed = 0:  use time, else any integer
     // init random number generator
     setRanNumberGen(0);
-
-    if (_ranRod){
-        initRodsVec();// SO FAR THE RODS ARE NOT INITIADED RANDOMLY; BUT SUCH THAT THE TRACER FITS FOR SURE FOR p <= 10
-    }
-
 }
 
 void CConfiguration::updateStartpos(){
@@ -70,6 +57,11 @@ void CConfiguration::makeStep(){
     for (int i = 0; i < 3; i++){
         _prevpos[i] = _ppos[i];
         _ppos[i] += _timestep * _f_mob[i] + _mu_sto * _f_sto[i];
+        if (isnan(_ppos[i])){
+            cout << "axis " << i << "\n_prevpos " << _prevpos[i] << "\n_ppos " << _ppos[i] << endl;
+            cout << "_f_mob[i] " << _f_mob[i] << "\n_f_sto[i] " << _f_sto[i] << endl;
+            abort();
+        }
     }
 }
 
@@ -92,7 +84,6 @@ void CConfiguration::checkBoxCrossing(){
         if (exitmarker!=0){
             updateRanb(i,exitmarker);
             if (_ranU) _poly.shiftPolySign(i, exitmarker);
-            }
         }
     }
 }
@@ -106,6 +97,8 @@ void CConfiguration::calcStochasticForces(){
 
     // the variate generator uses m_igen (int rand number generator),
     // samples from normal distribution with variance 1 (later sqrt(2) is multiplied)
+    boost::variate_generator<boost::mt19937&, boost::normal_distribution<double> > ran_gen(
+            *m_igen, boost::normal_distribution<double>(0, 1));
 
     for (int i = 0; i < 3; i++) {
         _f_sto[i] = ran_gen();
@@ -117,7 +110,7 @@ void CConfiguration::calcMobilityForces(){
     //calculate mobility forces from potential Epot - Unified version that includes 2ndOrder if k is larger than or equal 0.2 b , except if ranPot is activated.
     double r_abs = 0;
     double r_i = 0, r_k = 0;
-    array<int,4> r_is, r_ks;
+    array<double,4> r_is, r_ks;
     double utmp = 0, frtmp = 0;     //temporary "hilfsvariables"
     double Epot = 0;
     double z1, z2;
@@ -154,8 +147,7 @@ void CConfiguration::calcMobilityForces(){
                 //if (r_abs < 0.9*_pradius) cout << "Small rho distace: " << r_abs << endl;
 
 
-                if (_potMod) calculateExpPotentialMOD(r_abs, utmp, frtmp, plane);
-                else calculateExpPotential(r_abs, utmp, frtmp);
+                calculateExpPotential(r_abs, utmp, frtmp);
 
 
                 // if (_ranU){
@@ -175,9 +167,9 @@ void CConfiguration::calcMobilityForces(){
 //                     }
 //                     n++;  //index of next rod in curent plane
 //                 }
-
-
+                
                 if (_LJPot && ( r_abs < r_c )) calcLJPot(r_abs, utmp, frtmp);
+                
 
 
                 Epot += utmp;
@@ -227,9 +219,14 @@ void CConfiguration::calculateExpPotential(const double r, double& U, double& Fr
     // k is the interaction range. U_0 is the strength of the potential
     //which is attractive if direction = -1, and repulsive if direction = 1
     //The potential is weighted with kT!
-
-    U = _potStrength * exp(-1 * r / _potRange);
-    Fr = U / (_potRange * r);  //This is the force divided by the distance to the rod!
+    if (r < 5*_potRange){
+        U = _potStrength * exp(-1 * r / _potRange);
+        Fr = U / (_potRange * r);  //This is the force divided by the distance to the rod!
+    }
+    else{
+        U=0;
+        Fr=0;
+    }
 }
 
 
@@ -239,42 +236,17 @@ void CConfiguration::calculateExpHPI(const double r, double& U, double& Fr){
 	Fr += u / (_hpi_k * r);
 }
 
-/*void CConfiguration::calculateDHPotential(const double r, double& U, double& Fr){
-    //function to calculate an exponential Potential U = U_0 * exp(-1 * r * k)
-    // k is the interaction range. U_0 is the strength of the potential
-    //which is attractive if direction = -1, and repulsive if direction = 1
-    //The potential is weighted with kT!
-
-    U = _potStrength * exp(-1 * r / _potRange) / r;
-    Fr = U * (1/_potRange + 1/r) / r;  //This is the force divided by the distance to the rod!
-}
-*/
 
 void CConfiguration::calculateExpPotentialMOD(const double r, double& U, double& Fr, int plane){
-    //function to calculate an exponential Potential U = U_0 * exp(-1 * r * k)
-    // k is the interaction range. U_0 is the strength of the potential
-    //which is attractive if direction = -1, and repulsive if direction = 1
-    //The potential is weighted with kT!
-    //index, is the dimension (x, y or z) which is normal to the plane that the potential is being calculated in.
-
-	 // U = _potStrength * exp(-1 * r / _potRange) * ( 1 - 2 / 3 * pow((2*_ppos[3-index]/_boxsize - 1), 2));
-	 U = _potStrength * exp( -r / _potRange) * (1 - abs(2 * _ppos[plane]/_boxsize - 1) * 0.66667);
-	 Fr = U / (_potRange * r);  //This is the force divided by the distance to the rod!
-	 
-    //DEBYE!!!
-   // U = _potStrength * exp(-1 * r / _potRange) / r;
-    //    Fr = U * (1/_potRange + 1/r) / r;  //This is the force divided by the distance to the rod!
-	 
-    // BESSEL
-  //  U = 2 * _potStrength * boost::math::cyl_bessel_k(0, r / _potRange);
-  //  Fr = 2 * _potStrength * boost::math::cyl_bessel_k(1, r / _potRange) / (_potRange * r);
+    cout << "NOT DEFINED!!!!!!!" << endl;
 }
 
 void CConfiguration::modifyPot(double& U, double& Fr, double dist){
     //function to modify the potential according to the distance along the polymer axis to the next neighbor,
     //in case the next neighboring polymer part is of opposite sign
-    U = U * 4 * dist/_boxsize;
-    Fr = Fr * 4 * dist/_boxsize;
+    cout << "NOT DEFINED" << endl;
+//     U = U * 4 * dist/_boxsize;
+//     Fr = Fr * 4 * dist/_boxsize;
 }
 
 //****************************STERIC HINDRANCE****************************************************//
@@ -282,28 +254,22 @@ void CConfiguration::modifyPot(double& U, double& Fr, double dist){
 bool CConfiguration::testOverlap(){//TODO
     //Function to check, whether the diffusing particle of size psize is overlapping with any one of the rods (edges of the box)
     //most if borrowed from moveParticleAndWatch()
-    cout << "testOverlap() NOT IMPLEMENTED" << endl;
-    // bool overlaps = false;
-    // double r_i = 0, r_k = 0;
-    // double r_abs = 0;
-    // double L1[] = {0, _boxsize, 0, _boxsize};  //these two arrays are only needed for the iteration.
-    // double L2[] = {0, 0, _boxsize, _boxsize};
-    //
-    // for (int i = 0; i < 2; i++){
-    //     for (int k = i+1; k < 3; k++){
-    //         for (int n = 0; n < 4; n++){
-    //             r_i = _ppos[i] - L1[n];
-    //             r_k = _ppos[k] - L2[n];
-    //             //this is needed if we dont want the rods to cross each other to create a strong potential well
-    //             if (k == 2){
-    //                 r_i -= _rodDistance;
-    //                 if (i == 0) r_k -= _rodDistance;
-    //             }
-    //             r_abs = sqrt(r_i * r_i + r_k * r_k); //distance to the rods
-    //             if (r_abs < _pradius) overlaps = true;
-    //         }
-    //     }
-    // }
+    bool overlaps = false;    
+    double r_i = 0, r_k = 0;
+    double r_abs = 0;
+    
+    for (int i = 0; i < 2; i++){
+        for (int k = i+1; k < 3; k++){
+            for (int ni = 0; ni < 2; ni++){
+                for (int nk = 0; nk < 2; nk++){
+                    r_i = _ppos[i] - ni*_boxsize[i];
+                    r_k = _ppos[k] - nk*_boxsize[k];       
+                    r_abs = sqrt(r_i * r_i + r_k * r_k); //distance to the rods
+                    if (r_abs < _pradius) overlaps = true;
+                }
+            }
+        }
+    }
     return overlaps;
 }
 
@@ -311,6 +277,7 @@ bool CConfiguration::testOverlap(){//TODO
 void CConfiguration::calcLJPot(const double r, double& U, double& Fr){
     //Function to calculate the Lennard-Jones Potential
     double  por6 = pow((_pradius / r ), 6);      //por6 stands for "p over r to the power of 6" . The 2 comes from the fact, that I need the particle radius, not the particle size
+    ifdebug(if (4 * ( por6*por6 - por6 + 0.25 ) > 500) cout << "Very large LJ!!"<< endl;)
     U += 4 * ( por6*por6 - por6 + 0.25 );
     Fr +=  24 / ( r * r ) * ( 2 * por6*por6 - por6 );
 }

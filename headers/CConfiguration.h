@@ -60,7 +60,6 @@ private:
     double _resetpos;
     double _startpos[3];          //Stores where the particle starting position was. This is needed to calculate the mean square displacement
     double _prevpos[3];           //Stores previous particle position before particle is moved.
-    vector<vector<vector<int> > > _posHistoM;
 
     int _min, _max;        // parameters for determining up to which order neighboring rods are considered for the potential
 
@@ -86,7 +85,7 @@ private:
 	return (zeroone() * 2) - 1; //this calculation makes value either -1 or 1
     }
     
-    double ran_gamma(double alpha = 5., double beta = 1.){
+    double ran_gamma(double alpha = 10., double beta = 1.){
         // http://www.boost.org/doc/libs/1_58_0/doc/html/boost/random/gamma_distribution.html
         // Mean of gamma dist is alpha* beta
         boost::variate_generator<boost::mt19937&    , boost::gamma_distribution<double> > ran_gen(
@@ -107,19 +106,25 @@ private:
     void updateRanb(int axis, int exitmarker){
         // ROTATE http://en.cppreference.com/w/cpp/algorithm/rotate
         //copy neighbor boxsize to _boxsize for particle box.
-        if (exitmarker=1){
+        //TODO del
+        cout << "Update Ranb\naxis " << axis << "  --  exitmarker " << exitmarker << endl;
+        //TODO tmp
+        double newb = _pradius + ran_gamma();
+        //TODO del
+        cout << "*" << newb << endl;
+        if (exitmarker==1){
             // rotation to the left
             std::rotate(_b_array[axis].begin(), _b_array[axis].begin() + 1, _b_array[axis].end());
             // assign new boxsize on right side
-            _b_array[axis].back() = ran_gamma();
+            _b_array[axis].back() = newb;
         }
         else {
             // rotation to the  right
             std::rotate(_b_array[axis].rbegin(), _b_array[axis].rbegin() + 1, _b_array[axis].rend());
             // assign new boxsize on right side
-            ifdebug(cout << "B4 _b_array[axis].front() = " << _b_array[axis].front() << endl;)
-            _b_array[axis].front() = ran_gamma();
-            ifdebug(cout << "AFTER _b_array[axis].front() = " << _b_array[axis].front() << endl;)
+            //ifdebug(cout << "B4 _b_array[axis].front() = " << _b_array[axis].front() << endl;)
+            _b_array[axis].front() = newb;
+            //ifdebug(cout << "AFTER _b_array[axis].front() = " << _b_array[axis].front() << endl;)
         }
         //copy to _boxsize array
         _boxsize[axis] = _b_array[axis][1];
@@ -144,9 +149,8 @@ private:
 public:
     CConfiguration();
     CConfiguration(
-            double timestep,  double potRange,  double potStrength, double rodDistance, const bool potMod, double psize,
-            const bool posHisto, const bool steric, const bool ranU,  bool hpi, double hpi_u, double hpi_k, bool ranRods, double n_rods);
-    void resetParameters(double timestep, double potRange, double potStrength);
+        string distribution,double timestep,  double potRange,  double potStrength, const bool potMod,
+        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi);
     void updateStartpos();
     void makeStep();
     void checkBoxCrossing();
