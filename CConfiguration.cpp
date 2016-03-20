@@ -32,6 +32,10 @@ CConfiguration::CConfiguration(
         _boxCoord[i] = 0;
         _prevpos[i] = 5;
     }
+   if (distribution == "gamma2"){
+        _alpha = 5.; _beta = 2.;
+       cout << "_alpha = " << _alpha << endl;
+   }
 
     if (_ranU) {
        cout << "TODOOOOO" << endl;
@@ -55,7 +59,7 @@ void CConfiguration::makeStep(){
     for (int i = 0; i < 3; i++){
         _prevpos[i] = _ppos[i];
         _ppos[i] += _timestep * _f_mob[i] + _mu_sto * _f_sto[i];
-        if (isnan(_ppos[i])){
+        if (std::isnan(_ppos[i])){
             cout << "axis " << i << "\n_prevpos " << _prevpos[i] << "\n_ppos " << _ppos[i] << endl;
             cout << "_f_mob[i] " << _f_mob[i] << "\n_f_sto[i] " << _f_sto[i] << endl;
             abort();
@@ -207,7 +211,7 @@ void CConfiguration::moveBack(){
     //moves particle back to previous position
     for (int i = 0; i < 3; i++) {_ppos[i] = _prevpos[i];}
 }
-//****************************POTENTIALS**********************************************************
+//****************************POTENTIALS**********************************************************//
 
 
 
@@ -229,9 +233,11 @@ void CConfiguration::calculateExpPotential(const double rSq, double& U, double& 
 
 
 void CConfiguration::calculateExpHPI(const double r, double& U, double& Fr){
-	double u = _hpi_u * exp( - r / _hpi_k);
-	U += u;
-	Fr += u / (_hpi_k * r);
+    cout << "NOTHING HERE" << endl;
+    abort();
+//	double u = _hpi_u * exp( - r / _hpi_k);
+//	U += u;
+//	Fr += u / (_hpi_k * r);
 }
 
 

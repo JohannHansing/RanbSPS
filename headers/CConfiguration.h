@@ -32,9 +32,6 @@ private:
     double _boxsize[3];          // ALWAYS define boxsize through particlesize due to scaling!
     std::array<std::array<double,3>,3> _b_array;
     double _epsilon;
-	double _hpi_u;
-	double _hpi_k;
-
 
     //EXPONENTIAL Potential
     double _potRange;         // Avoid values like 10/3 = 3.33333... ALWAYS define the Range of the exp potential through boxsize due to scaling!
@@ -70,6 +67,9 @@ private:
     double _f_mob[3];   //store mobility and stochastic force
     double _f_sto[3];
 
+    // Gamma distribution
+    double _alpha = 10.;
+    double _beta = 1.;
 
     boost::mt19937 *m_igen;                      //generate instance of random number generator "twister".
     double zerotoone(){
@@ -86,18 +86,21 @@ private:
 	return (zeroone() * 2) - 1; //this calculation makes value either -1 or 1
     }
     
-    double ran_gamma(double alpha = 10., double beta = 1.){
+    double ran_gamma(){
         // http://www.boost.org/doc/libs/1_58_0/doc/html/boost/random/gamma_distribution.html
         // Mean of gamma dist is alpha* beta
         boost::variate_generator<boost::mt19937&    , boost::gamma_distribution<double> > ran_gen(
-                *m_igen, boost::gamma_distribution<double>(alpha, beta));
+                *m_igen, boost::gamma_distribution<double>(_alpha, _beta));
         return ran_gen();
     }
 
     void initRanb(){
         // For now, I just use a gamma distribution
         for (int i=0;i<3;i++){
-            _boxsize[i] = 10;
+            if (_pradius < 4.5){
+                _boxsize[i] = 10;
+            }
+            else _boxsize[i] = 2*_pradius + 1;
             _b_array[i][1] = _boxsize[i];
             _b_array[i][0] = ran_gamma();
             _b_array[i][2] = ran_gamma();

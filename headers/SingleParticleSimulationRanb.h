@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <math.h>
+#include <cmath>
 #include <boost/filesystem.hpp>
 #include "CAverage.h"
 #include "CConfiguration.h"
