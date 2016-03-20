@@ -16,8 +16,7 @@
 #include <boost/math/special_functions/bessel.hpp>
 #include "CPolymers.h"
 
-
-#define ifdebug(x) 
+#define ifdebug(x) x
 
 using namespace std;
 

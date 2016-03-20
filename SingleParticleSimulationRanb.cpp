@@ -1,6 +1,5 @@
 #include "headers/SingleParticleSimulationRanb.h"
 
-#define ifdebug(x) 
 using namespace std;
 
 
@@ -21,15 +20,16 @@ int main(int argc, const char* argv[]){
     bool ranPot = (strcmp(argv[7] , "true") == 0 ) ;
     bool hpi = (strcmp(argv[8] , "true") == 0 ) ;          // hpi exp
     int boolpar = 8;
-	
-	// Checking for correct structure of input arguments
-	for (int k= 0; k < argc; k++ ) cout << "parameter " << k << " " << argv[k] << endl;
-	for (int b_i=1; b_i<=boolpar; b_i++){
-		if ((strcmp(argv[b_i] , "true") == 1 )  && (strcmp(argv[b_i] , "false") == 1 )){
-			cerr << "Error; Bool parameter " << b_i << " is not either 'true' or 'false'!" << endl;
-			exit(1);
-		}
-	}
+    ifdebug(cout << "copied bools. ";)
+    
+    // Checking for correct structure of input arguments
+    for (int k= 1; k < argc; k++ ) cout << "parameter " << k << " " << argv[k] << endl;
+    for (int b_i=2; b_i<=boolpar; b_i++){
+        if (!((strcmp(argv[b_i] , "true") == 0 )  || (strcmp(argv[b_i] , "false") == 0 ))){
+            cerr << "Error; Bool parameter " << b_i << " is not either 'true' or 'false'!" << endl;
+            exit(1);
+        }
+    }
 
 
     int runs = atoi( argv[boolpar+1] );                       // Number of Simulation runs to get mean values from
@@ -44,6 +44,8 @@ int main(int argc, const char* argv[]){
     unsigned int saveInt;
     int instValIndex;                             //Counter for addInstantValue
     
+    ifdebug(cout << "copied  params. ";)
+    
     cout << "distribution " << distribution << endl;
 
 
@@ -53,15 +55,21 @@ int main(int argc, const char* argv[]){
     const int trajout = (int)(10/timestep);
         
     //Create data folders and print location as string to string "folder"
+    //TODO del
+    cout << "b4 folder" << endl;
     string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranPot);
+    cout << "Writing to " << folder << endl;
+    ifdebug(cout << "created folder. ";)
 
 
     //initialize averages
     CAverage energyU = CAverage("Upot", folder, instantvalues, runs);
     CAverage squareDisp = CAverage("squaredisp", folder, instantvalues, runs);
+    ifdebug(cout << "created CAverage files. ";)
 
     //initialize instance of configuration
     CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, potentialMod, particlesize, recordPosHisto, includeSteric, ranPot, hpi);
+    ifdebug(cout << "created CConf conf. ";)
 
     
     unsigned int stepcount = 0;

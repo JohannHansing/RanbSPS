@@ -31,6 +31,7 @@ size_t sizeOfArray( const T(&)[ N ] )
 
 
 
+       //createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranPot);
 string createDataFolder(string distribution, double timestep, double simtime, double potRange, double potStrength, 
                         double particlesize, bool steric, bool randomPot){
     //NOTE: Maybe I can leave out dt, as soon as I settled on a timestep

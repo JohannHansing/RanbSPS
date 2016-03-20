@@ -12,6 +12,7 @@ CConfiguration::CConfiguration(){
 CConfiguration::CConfiguration(
         string distribution, double timestep,  double potRange,  double potStrength, const bool potMod,
         double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi){
+    setRanNumberGen(0);
     _potRange = potRange;
     _potStrength = potStrength;
     _pradius = psize/2;
@@ -36,10 +37,6 @@ CConfiguration::CConfiguration(
     }
     
     initRanb();
-
-    // seed = 0:  use time, else any integer
-    // init random number generator
-    setRanNumberGen(0);
 }
 
 void CConfiguration::updateStartpos(){
