@@ -3,7 +3,6 @@
 
 using namespace std;
 
-const double _6root2 = 1.122462;
 
 
 CConfiguration::CConfiguration(){
@@ -16,6 +15,8 @@ CConfiguration::CConfiguration(
     _potRange = potRange;
     _potStrength = potStrength;
     _pradius = psize/2;
+    _r_cSq = pow(1.122462 * _pradius,2);
+    _cutoffExpSq = 5*_potRange;
     _timestep = timestep;
     _potMod = potMod;
     _LJPot = (steric == false) && (psize != 0);
@@ -105,7 +106,7 @@ void CConfiguration::calcStochasticForces(){
 
 void CConfiguration::calcMobilityForces(){
     //calculate mobility forces from potential Epot - Unified version that includes 2ndOrder if k is larger than or equal 0.2 b , except if ranPot is activated.
-    double r_abs = 0;
+    double r_absSq = 0;
     double r_i = 0, r_k = 0;
     array<double,4> r_is, r_ks;
     double utmp = 0, frtmp = 0;     //temporary "hilfsvariables"
@@ -120,7 +121,6 @@ void CConfiguration::calcMobilityForces(){
     for (int l = 0; l < 3; l++) {
         _f_mob[l] = 0;
     }
-    const double r_c = _6root2 * _pradius;    //cutoff for Lennard-Jones calculation (at minimum)
 
     for (int i = 0; i < 3; i++){
         int k = i + 1;   //k always one direction "further", i.e. if i = 0 = x-direction, then k = 1 = y-direction
@@ -140,11 +140,11 @@ void CConfiguration::calcMobilityForces(){
                 r_i = r_is[ni];
                 r_k = r_ks[nk];
 
-                r_abs = sqrt(r_i * r_i + r_k * r_k); //distance to the rods
+                r_absSq = r_i * r_i + r_k * r_k; //distance to the rods
                 //if (r_abs < 0.9*_pradius) cout << "Small rho distace: " << r_abs << endl;
 
 
-                calculateExpPotential(r_abs, utmp, frtmp);
+                calculateExpPotential(r_absSq, utmp, frtmp);
 
 
                 // if (_ranU){
@@ -165,7 +165,7 @@ void CConfiguration::calcMobilityForces(){
 //                     n++;  //index of next rod in curent plane
 //                 }
                 
-                if (_LJPot && ( r_abs < r_c )) calcLJPot(r_abs, utmp, frtmp);
+                if (_LJPot && ( r_absSq < _r_cSq )) calcLJPot(r_absSq, utmp, frtmp);
                 
 
 
@@ -211,12 +211,13 @@ void CConfiguration::moveBack(){
 
 
 
-void CConfiguration::calculateExpPotential(const double r, double& U, double& Fr){
+void CConfiguration::calculateExpPotential(const double rSq, double& U, double& Fr){
     //function to calculate an exponential Potential U = U_0 * exp(-1 * r * k)
     // k is the interaction range. U_0 is the strength of the potential
     //which is attractive if direction = -1, and repulsive if direction = 1
     //The potential is weighted with kT!
-    if (r < 5*_potRange){
+    if (rSq < _cutoffExpSq && _potStrength != 0){
+        const double r = sqrt(rSq);
         U = _potStrength * exp(-1 * r / _potRange);
         Fr = U / (_potRange * r);  //This is the force divided by the distance to the rod!
     }
@@ -271,12 +272,12 @@ bool CConfiguration::testOverlap(){//TODO
 }
 
 
-void CConfiguration::calcLJPot(const double r, double& U, double& Fr){
+void CConfiguration::calcLJPot(const double rSq, double& U, double& Fr){
     //Function to calculate the Lennard-Jones Potential
-    double  por6 = pow((_pradius / r ), 6);      //por6 stands for "p over r to the power of 6" . The 2 comes from the fact, that I need the particle radius, not the particle size
+    double  por6 = pow((_pradius*_pradius / rSq ), 3);      //por6 stands for "p over r to the power of 6" . The 2 comes from the fact, that I need the particle radius, not the particle size
     ifdebug(if (4 * ( por6*por6 - por6 + 0.25 ) > 500) cout << "Very large LJ!!"<< endl;)
     U += 4 * ( por6*por6 - por6 + 0.25 );
-    Fr +=  24 / ( r * r ) * ( 2 * por6*por6 - por6 );
+    Fr +=  24 / ( rSq ) * ( 2 * por6*por6 - por6 );
 }
 
 

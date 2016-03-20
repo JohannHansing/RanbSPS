@@ -41,6 +41,8 @@ private:
     double _potStrength;      // rescaled U_0 for exponential Potential
     double _rodDistance;
     CPolymers _poly;
+    double _cutoffExpSq;
+    double _r_cSq;    //cutoff for Lennard-Jones calculation (at minimum)
 
 
     //bool Parameters
