@@ -55,10 +55,7 @@ int main(int argc, const char* argv[]){
     const int trajout = (int)(10/timestep);
         
     //Create data folders and print location as string to string "folder"
-    //TODO del
-    cout << "b4 folder" << endl;
     string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranPot);
-    cout << "Writing to " << folder << endl;
     ifdebug(cout << "created folder. ";)
 
 

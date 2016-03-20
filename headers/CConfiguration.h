@@ -16,7 +16,7 @@
 #include <boost/math/special_functions/bessel.hpp>
 #include "CPolymers.h"
 
-#define ifdebug(x) x
+#define ifdebug(x) 
 
 using namespace std;
 
@@ -106,7 +106,7 @@ private:
         // ROTATE http://en.cppreference.com/w/cpp/algorithm/rotate
         //copy neighbor boxsize to _boxsize for particle box.
         ifdebug(cout << "Update Ranb\naxis " << axis << "  --  exitmarker " << exitmarker << endl;)
-        double newb = _pradius + ran_gamma();
+        double newb = ran_gamma();
         ifdebug(cout << "*" << newb << endl;)
         if (exitmarker==1){
             // rotation to the left
