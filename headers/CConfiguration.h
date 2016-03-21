@@ -182,8 +182,10 @@ private:
                 }
                 cellInterval_ai += _b_array[i][abc];
             }
-            cout << axis << endl;
-            prinRodPos(axis);
+            ifdebug(
+                cout << axis << endl;
+                prinRodPos(axis);
+            )
         }
     }
     
