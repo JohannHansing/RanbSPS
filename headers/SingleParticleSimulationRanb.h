@@ -33,13 +33,14 @@ size_t sizeOfArray( const T(&)[ N ] )
 
        //createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranPot);
 string createDataFolder(string distribution, double timestep, double simtime, double potRange, double potStrength, 
-                        double particlesize, bool steric, bool randomPot){
+                        double particlesize, bool steric, bool randomPot, bool ranRod){
     //NOTE: Maybe I can leave out dt, as soon as I settled on a timestep
     //NOTE: As soon as I create input-list with variables, I must change this function
     char range[5];
     sprintf(range, "%.3f", potRange);
     //In the definition of folder, the addition has to START WITH A STRING! for the compiler to know what to do (left to right).
     string folder = "sim_data/" + distribution;
+    if (ranRod) folder += "/ranRod";
     if (randomPot) folder = folder + "/ranPot";
     if (steric) folder = folder + "/steric";    //TODO steric2
     folder = folder
@@ -63,7 +64,7 @@ void settingsFile(string folder, bool ranRod, double particlesize, double timest
     settingsfile.open((folder + "/sim_Settings.txt").c_str());
     settingsfile << "Sim dir: " << folder << endl;
     settingsfile << "Pore Distribution " << distribution << endl;
-    settingsfile << "TMP " << ranRod << endl;
+    settingsfile << "ranRod " << ranRod << endl;
     settingsfile << "TMP " << potMod << endl;//" (Bessel)" << endl;  //TODO Bessel!
     settingsfile << "TMP " << recordMFP << endl;
     settingsfile << "includesteric " << steric << endl;

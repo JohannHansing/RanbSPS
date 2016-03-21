@@ -55,7 +55,7 @@ int main(int argc, const char* argv[]){
     const int trajout = (int)(10/timestep);
         
     //Create data folders and print location as string to string "folder"
-    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranPot);
+    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranPot, ranRod);
     ifdebug(cout << "created folder. ";)
 
 
@@ -65,7 +65,7 @@ int main(int argc, const char* argv[]){
     ifdebug(cout << "created CAverage files. ";)
 
     //initialize instance of configuration
-    CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, potentialMod, particlesize, recordPosHisto, includeSteric, ranPot, hpi);
+    CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, potentialMod, particlesize, recordPosHisto, includeSteric, ranPot, hpi, ranRod);
     ifdebug(cout << "created CConf conf. ";)
 
     

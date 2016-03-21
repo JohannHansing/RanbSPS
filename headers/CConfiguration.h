@@ -11,12 +11,14 @@
 #include <sstream>
 #include <cmath>
 #include <boost/random.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/gamma_distribution.hpp>
 #include <boost/math/special_functions/bessel.hpp>
 #include "CPolymers.h"
+#include "CRod.h"
 
-#define ifdebug(x) 
+#define ifdebug(x)  
 
 using namespace std;
 
@@ -78,7 +80,9 @@ private:
     }
     
     double atob(double a, double b){
-        return a + (b-a) * zerotoone()();
+        ifdebug(if (a >= b) cout << "a " << a << "\nb " << b << endl;)
+        boost::variate_generator<boost::mt19937&, boost::random::uniform_real_distribution<>> ran_gen(*m_igen, boost::random::uniform_real_distribution<>(a, b));
+        return ran_gen();
     }
     
     int ran_sign(){
@@ -96,7 +100,6 @@ private:
         return ran_gen();
     }
     
-    //TODO del
     void testgamma(){
 
         ofstream trajectoryfile;
@@ -117,6 +120,7 @@ private:
             _b_array[i][1] = _boxsize[i];
             _b_array[i][0] = ran_gamma();
             _b_array[i][2] = ran_gamma();
+            ifdebug(cout << _b_array[i][0] << "  " << _b_array[i][1] << "  " << _b_array[i][2] << endl;)
         }
     }
     
@@ -147,21 +151,22 @@ private:
     
     //TODOD
     // ############# ranRod Stuff ##################
-    
-    std::array<vector<CRod> , 3> _rodvec; // vector to store polymer rods in cell, one vector stores polymers that are parallel to the same axis
+    std::array<std::array<std::array<CRod, 3>, 3>, 3> _rodarr; // vector to store polymer rods in cell, one vector stores polymers that are parallel to the same axis
 
     
-    void initRodsVec(){
-        double xipos, xjpos;
+    void initRodsArr(){
+        int i,j;
+        double xipos, xjpos, cellInterval_ai, cellInterval_aj;
         for (int axis=0;axis<3;axis++){//axis 0 is x axis.
-            cellInterval_ai = - _b_array[i][0]
-            cellInterval_aj = - _b_array[j][0]
-            for (int abc=0;abc<3;abc++){
-                for (int def=0;def<3;def++){
-                    cellInterval_bi += _b_array[i][abc]
-                    cellInterval_bj += _b_array[j][def]
-                    xipos = atob(cellInterval_ai,cellInterval_bi);
-                    xjpos = atob(cellInterval_aj,cellInterval_bj);
+            i = axis +1;
+            if (i==3) i=0;
+            j=3-(i+axis);
+            cellInterval_ai = - _b_array[i][0];
+            for (int abc=0;abc<3;abc++){//for i = axis + 1
+                cellInterval_aj = - _b_array[j][0];
+                for (int def=0;def<3;def++){// for j = axis + 2
+                    xipos = atob(cellInterval_ai,cellInterval_ai+_b_array[i][abc]);
+                    xjpos = atob(cellInterval_aj,cellInterval_aj+_b_array[j][def]);
                     if ((abc ==1) && (def == 1)){
                         // In the central cell, the polymer goes to the origin, so that the particle has space to fit
                         xipos = 0;
@@ -173,60 +178,73 @@ private:
                         xjpos = _b_array[j][1] + _b_array[j][2];
                     }
                     _rodarr[axis][abc][def] = CRod(axis, xipos, xjpos );
+                    cellInterval_aj += _b_array[j][def];
                 }
+                cellInterval_ai += _b_array[i][abc];
             }
+            cout << axis << endl;
+            prinRodPos(axis);
         }
     }
     
     //TODO
-    void updateRodsVec(int crossaxis,int exitmarker){//exitmarker is -1 for negative direction, or 1 for positive
+    void updateRodsArr(int crossaxis,int exitmarker){//exitmarker is -1 for negative direction, or 1 for positive
         //delete all polymers orthogonal to crossaxis, that are outside the box now
         //update other polymer positions
-        int ortho[2] = {1,2};
-        if (crossaxis == 1){
-            ortho[0]=2; 
-            ortho[1]=0;
-        }
-        else if (crossaxis == 2){
-            ortho[0]=0; 
-            ortho[1]=1;
-        }
+        int i,j;
+        i=crossaxis+1;
+        if (i==3) i =0;
+        j=3-(i+crossaxis);
         // shift positions of rods
-        int plane;
-        CRod tmpRod = CRod();
-        for (int oa=0;oa<2;oa++){
-            plane = ortho[oa];
-            //cout << "plane " << plane << endl;
-            int nrods = _rodarr[plane].size();
-            for (int i=0;i<nrods;i++){//need to count beckwards, due to erase function!
-                //shift rod positions parallel to crossaxis. plane is direction that the shifted rods are parallel to.
-                if (exitmarker == -1 && _rodarr[plane][i].coord[crossaxis] - _boxsize/2.  ) > 1.5*_boxsize){
-                    // erase rods that have left the simulation box.
-                    //cout << _rodvec[plane].size() << " XXX ";
-                    _rodvec[plane].erase(_rodvec[plane].begin() + i);
-                    //cout << _rodvec[plane].size() << endl;
-                }
-            }
-            double reln = _n_rods / n_tries;// _n_rods / n_tries is probability of placing one of n_tries new
-            assert((reln < 1.) && "Error: reln in updateRodsVec must be smaller than 1!");
-            for (int j=0;j<3*n_tries;j++){// factor 3, since I reassign 3 cells per plane
-                if (zerotoone() < reln ){  
-                    tmpRod = CRod(plane,0.,0.);//Reset
-                    //in direction parallel to crossaxis, choose new position in side cell 
-                    tmpRod.coord[crossaxis] = (zerotoone()  + exitmarker) * _boxsize;
-                    int ortho2 = 3 - (plane + crossaxis);
-                    // in direction orthogonal to both plane and crossaxis
-                    tmpRod.coord[ortho2] = (zerotoone() * 3 -1) * _boxsize;
-                    _rodvec[plane].push_back(tmpRod);
-                    //cout << _rodvec[plane].size() << endl;
-                }
+        
+        if (exitmarker == 1){
+            rotate_left(_rodarr[j]);
+            for (int abc=0;abc<3;abc++){
+                rotate_left(_rodarr[i][abc]);
+                // new rod positions
+                _rodarr[i][abc][2].coord[crossaxis] = atob(_b_array[crossaxis][1] , _b_array[crossaxis][1]+_b_array[crossaxis][2]);
+                _rodarr[i][abc][2].coord[j] = atob(-_b_array[j][0] , _b_array[j][1]+_b_array[j][2]);
+                _rodarr[j][2][abc].coord[crossaxis] = atob(_b_array[crossaxis][1] , _b_array[crossaxis][1]+_b_array[crossaxis][2]);
+                _rodarr[j][2][abc].coord[i] = atob(-_b_array[i][0] , _b_array[i][1]+_b_array[i][2]);
             }
         }
-        avrods += _rodvec[0].size() + _rodvec[1].size() + _rodvec[2].size();
-        avcount += 1;
+        else{
+            rotate_right(_rodarr[j]);
+            for (int abc=0;abc<3;abc++){
+                rotate_right(_rodarr[i][abc]);
+                // new rod positions
+                _rodarr[i][abc][0].coord[crossaxis] = atob(-_b_array[crossaxis][0] , 0);
+                _rodarr[i][abc][0].coord[j] = atob(-_b_array[j][0] , _b_array[j][1]+_b_array[j][2]);
+                _rodarr[j][0][abc].coord[crossaxis] = atob(-_b_array[crossaxis][0] , 0);
+                _rodarr[j][0][abc].coord[i] = atob(-_b_array[i][0] , _b_array[i][1]+_b_array[i][2]);
+            }
+            
+        }
     }
-    void printAvRods(){
-        cout << "nrods in yz plane mean: " << avrods/(3*avcount) << endl;
+    
+    void prinRodPos(int axis){
+        for (int irod=0;irod<_rodarr[axis].size();irod++){
+            for (int jrod=0;jrod<_rodarr[axis].size();jrod++){
+                double rx =_rodarr[axis][irod][jrod].coord[0];
+                double ry =_rodarr[axis][irod][jrod].coord[1];     
+                double rz =_rodarr[axis][irod][jrod].coord[2];
+                cout << ",[" << rx << "," << ry << "," << rz << "]";
+            }
+        }
+        cout << "]," << endl;
+    }
+    
+    
+    
+    template<typename T, size_t N>
+    void rotate_left(std::array<T,N> & arr){
+        // rotation to the left
+        std::rotate(arr.begin(), arr.begin() + 1, arr.end());
+    }
+    template<typename T, size_t N>
+    void rotate_right(std::array<T,N> & arr){
+        // rotation to the  right
+        std::rotate(arr.rbegin(), arr.rbegin() + 1, arr.rend());
     }
 
 
@@ -249,7 +267,7 @@ public:
     CConfiguration();
     CConfiguration(
         string distribution,double timestep,  double potRange,  double potStrength, const bool potMod,
-        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi);
+        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi, bool ranRod);
     void updateStartpos();
     void makeStep();
     void checkBoxCrossing();
