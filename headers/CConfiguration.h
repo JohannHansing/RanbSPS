@@ -76,9 +76,11 @@ private:
         boost::uniform_01<boost::mt19937&> dist(*m_igen);
         return dist();
     }
-
-
-
+    
+    double atob(double a, double b){
+        return a + (b-a) * zerotoone()();
+    }
+    
     int ran_sign(){
     // the variate generator uses _igen (int rand number generator),
     // samples from uniform integer distribution 0, 1
@@ -92,6 +94,17 @@ private:
         boost::variate_generator<boost::mt19937&    , boost::gamma_distribution<double> > ran_gen(
                 *m_igen, boost::gamma_distribution<double>(_alpha, _beta));
         return ran_gen();
+    }
+    
+    //TODO del
+    void testgamma(){
+
+        ofstream trajectoryfile;
+        trajectoryfile.open(("tmp_gamma.txt"));
+        for (int i=0;i<100000;i++){
+            trajectoryfile << fixed << ran_gamma() << endl;
+        }
+        trajectoryfile.close();
     }
 
     void initRanb(){
@@ -129,6 +142,91 @@ private:
         }
         //copy to _boxsize array
         _boxsize[axis] = _b_array[axis][1];
+    }
+    
+    
+    //TODOD
+    // ############# ranRod Stuff ##################
+    
+    std::array<vector<CRod> , 3> _rodvec; // vector to store polymer rods in cell, one vector stores polymers that are parallel to the same axis
+
+    
+    void initRodsVec(){
+        double xipos, xjpos;
+        for (int axis=0;axis<3;axis++){//axis 0 is x axis.
+            cellInterval_ai = - _b_array[i][0]
+            cellInterval_aj = - _b_array[j][0]
+            for (int abc=0;abc<3;abc++){
+                for (int def=0;def<3;def++){
+                    cellInterval_bi += _b_array[i][abc]
+                    cellInterval_bj += _b_array[j][def]
+                    xipos = atob(cellInterval_ai,cellInterval_bi);
+                    xjpos = atob(cellInterval_aj,cellInterval_bj);
+                    if ((abc ==1) && (def == 1)){
+                        // In the central cell, the polymer goes to the origin, so that the particle has space to fit
+                        xipos = 0;
+                        xjpos = 0;
+                    }
+                    if ((abc ==1) && (def == 2)){
+                        // The particle should have at least one escape path, so that it does net get stuck right from the start
+                        xipos = 0;
+                        xjpos = _b_array[j][1] + _b_array[j][2];
+                    }
+                    _rodarr[axis][abc][def] = CRod(axis, xipos, xjpos );
+                }
+            }
+        }
+    }
+    
+    //TODO
+    void updateRodsVec(int crossaxis,int exitmarker){//exitmarker is -1 for negative direction, or 1 for positive
+        //delete all polymers orthogonal to crossaxis, that are outside the box now
+        //update other polymer positions
+        int ortho[2] = {1,2};
+        if (crossaxis == 1){
+            ortho[0]=2; 
+            ortho[1]=0;
+        }
+        else if (crossaxis == 2){
+            ortho[0]=0; 
+            ortho[1]=1;
+        }
+        // shift positions of rods
+        int plane;
+        CRod tmpRod = CRod();
+        for (int oa=0;oa<2;oa++){
+            plane = ortho[oa];
+            //cout << "plane " << plane << endl;
+            int nrods = _rodarr[plane].size();
+            for (int i=0;i<nrods;i++){//need to count beckwards, due to erase function!
+                //shift rod positions parallel to crossaxis. plane is direction that the shifted rods are parallel to.
+                if (exitmarker == -1 && _rodarr[plane][i].coord[crossaxis] - _boxsize/2.  ) > 1.5*_boxsize){
+                    // erase rods that have left the simulation box.
+                    //cout << _rodvec[plane].size() << " XXX ";
+                    _rodvec[plane].erase(_rodvec[plane].begin() + i);
+                    //cout << _rodvec[plane].size() << endl;
+                }
+            }
+            double reln = _n_rods / n_tries;// _n_rods / n_tries is probability of placing one of n_tries new
+            assert((reln < 1.) && "Error: reln in updateRodsVec must be smaller than 1!");
+            for (int j=0;j<3*n_tries;j++){// factor 3, since I reassign 3 cells per plane
+                if (zerotoone() < reln ){  
+                    tmpRod = CRod(plane,0.,0.);//Reset
+                    //in direction parallel to crossaxis, choose new position in side cell 
+                    tmpRod.coord[crossaxis] = (zerotoone()  + exitmarker) * _boxsize;
+                    int ortho2 = 3 - (plane + crossaxis);
+                    // in direction orthogonal to both plane and crossaxis
+                    tmpRod.coord[ortho2] = (zerotoone() * 3 -1) * _boxsize;
+                    _rodvec[plane].push_back(tmpRod);
+                    //cout << _rodvec[plane].size() << endl;
+                }
+            }
+        }
+        avrods += _rodvec[0].size() + _rodvec[1].size() + _rodvec[2].size();
+        avcount += 1;
+    }
+    void printAvRods(){
+        cout << "nrods in yz plane mean: " << avrods/(3*avcount) << endl;
     }
 
 

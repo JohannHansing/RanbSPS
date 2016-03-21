@@ -40,7 +40,8 @@ CConfiguration::CConfiguration(
     if (_ranU) {
        cout << "TODOOOOO" << endl;
     }
-    
+    //TODO del
+    testgamma();
     initRanb();
 }
 
