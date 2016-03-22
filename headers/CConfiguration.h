@@ -113,9 +113,7 @@ private:
     void initRanb(){
         // For now, I just use a gamma distribution
         for (int i=0;i<3;i++){
-            if (_pradius < 4.5){
-                _boxsize[i] = 10;
-            }
+            if (_pradius < 4.5)  _boxsize[i] = 10; 
             else _boxsize[i] = 2*_pradius + 1;
             _b_array[i][1] = _boxsize[i];
             _b_array[i][0] = ran_gamma();
@@ -134,14 +132,14 @@ private:
             // rotation to the left
             std::rotate(_b_array[axis].begin(), _b_array[axis].begin() + 1, _b_array[axis].end());
             // assign new boxsize on right side
-            _b_array[axis].back() = newb;
+            _b_array[axis].at(2) = newb;
         }
         else {
             // rotation to the  right
             std::rotate(_b_array[axis].rbegin(), _b_array[axis].rbegin() + 1, _b_array[axis].rend());
             // assign new boxsize on right side
             //ifdebug(cout << "B4 _b_array[axis].front() = " << _b_array[axis].front() << endl;)
-            _b_array[axis].front() = newb;
+            _b_array[axis].at(0) = newb;
             //ifdebug(cout << "AFTER _b_array[axis].front() = " << _b_array[axis].front() << endl;)
         }
         //copy to _boxsize array
@@ -172,11 +170,12 @@ private:
                         xipos = 0;
                         xjpos = 0;
                     }
-                    if ((abc ==1) && (def == 2)){
-                        // The particle should have at least one escape path, so that it does net get stuck right from the start
-                        xipos = 0;
-                        xjpos = _b_array[j][1] + _b_array[j][2];
-                    }
+                    //TODO  
+                    // if ((abc ==1) && (def == 2)){
+//                         // The particle should have at least one escape path, so that it does net get stuck right from the start
+//                         xipos = 0;
+//                         xjpos = _b_array[j][1] + _b_array[j][2];
+//                     }
                     _rodarr[axis][abc][def] = CRod(axis, xipos, xjpos );
                     cellInterval_aj += _b_array[j][def];
                 }
@@ -193,35 +192,61 @@ private:
     void updateRodsArr(int crossaxis,int exitmarker){//exitmarker is -1 for negative direction, or 1 for positive
         //delete all polymers orthogonal to crossaxis, that are outside the box now
         //update other polymer positions
+        double cellInterval_ai, cellInterval_aj;
         int i,j;
         i=crossaxis+1;
         if (i==3) i =0;
         j=3-(i+crossaxis);
         // shift positions of rods
-        
+        for (int abc=0; abc<3;abc++){
+            for (int def=0; def<3;def++){
+                _rodarr[i][abc][def].coord[crossaxis] -= exitmarker * _boxsize[crossaxis];
+                _rodarr[j][abc][def].coord[crossaxis] -= exitmarker * _boxsize[crossaxis];
+            }
+        }
+        // rotate around rods in cells abc and def and reassign
         if (exitmarker == 1){
             rotate_left(_rodarr[j]);
+            cellInterval_ai = - _b_array[i][0];
+            cellInterval_aj = - _b_array[j][0];
             for (int abc=0;abc<3;abc++){
                 rotate_left(_rodarr[i][abc]);
                 // new rod positions
+                //Example: -_b_array[j][0] , 0
+                   //      0 , _b_array[j][1]
+                   //      _b_array[j][1], _b_array[j][1]+ _b_array[j][2]
                 _rodarr[i][abc][2].coord[crossaxis] = atob(_b_array[crossaxis][1] , _b_array[crossaxis][1]+_b_array[crossaxis][2]);
-                _rodarr[i][abc][2].coord[j] = atob(-_b_array[j][0] , _b_array[j][1]+_b_array[j][2]);
+                _rodarr[i][abc][2].coord[j] = atob(cellInterval_aj , cellInterval_aj+_b_array[j][abc]);
                 _rodarr[j][2][abc].coord[crossaxis] = atob(_b_array[crossaxis][1] , _b_array[crossaxis][1]+_b_array[crossaxis][2]);
-                _rodarr[j][2][abc].coord[i] = atob(-_b_array[i][0] , _b_array[i][1]+_b_array[i][2]);
+                _rodarr[j][2][abc].coord[i] = atob(cellInterval_ai , cellInterval_ai+_b_array[i][abc]);
+                cellInterval_aj+=_b_array[j][abc];
+                cellInterval_ai+=_b_array[i][abc];
             }
         }
         else{
             rotate_right(_rodarr[j]);
+            cellInterval_ai = - _b_array[i][0];
+            cellInterval_aj = - _b_array[j][0];
             for (int abc=0;abc<3;abc++){
                 rotate_right(_rodarr[i][abc]);
                 // new rod positions
                 _rodarr[i][abc][0].coord[crossaxis] = atob(-_b_array[crossaxis][0] , 0);
-                _rodarr[i][abc][0].coord[j] = atob(-_b_array[j][0] , _b_array[j][1]+_b_array[j][2]);
+                _rodarr[i][abc][0].coord[j] = atob(cellInterval_aj , cellInterval_aj+_b_array[j][abc]);
                 _rodarr[j][0][abc].coord[crossaxis] = atob(-_b_array[crossaxis][0] , 0);
-                _rodarr[j][0][abc].coord[i] = atob(-_b_array[i][0] , _b_array[i][1]+_b_array[i][2]);
+                _rodarr[j][0][abc].coord[i] = atob(cellInterval_ai , cellInterval_ai+_b_array[i][abc]);
+                cellInterval_aj+=_b_array[j][abc];
+                cellInterval_ai+=_b_array[i][abc];
             }
-            
         }
+        ifdebug(
+            for (int axis=0;axis<3;axis++){cellInterval_ai = - _b_array[i][0];
+                for (int abc=0;abc<3;abc++){//for i = axis + 1
+                    cellInterval_aj = - _b_array[j][0];
+                    for (int def=0;def<3;def++){
+                        if ()
+                }
+            }
+        )
     }
     
     void prinRodPos(int axis){

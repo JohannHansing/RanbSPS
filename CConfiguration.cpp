@@ -82,12 +82,15 @@ void CConfiguration::checkBoxCrossing(){
             _ppos[i] += _boxsize[i];
             _boxCoord[i] -= _boxsize[i];
             exitmarker = -1;
-
         }
         else if (_ppos[i] > _boxsize[i]){
             _ppos[i] -= _boxsize[i];
             _boxCoord[i] += _boxsize[i];
             exitmarker = 1;
+            if (_ppos[i] > 10){
+                cout << "Bad _ppos after boxcrossing. Aborting!" << endl;
+                abort();
+            }
         }
         if (exitmarker!=0){
             updateRanb(i,exitmarker);
