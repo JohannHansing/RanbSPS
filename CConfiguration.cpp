@@ -83,7 +83,7 @@ void CConfiguration::checkBoxCrossing(){
     for (int i = 0; i < 3; i++){
         exitmarker =0;
         if (_ppos[i] < 0){
-            _ppos[i] += _boxsize[i];
+            MISTAKE! _ppos[i] += _boxsize[i];
             _boxCoord[i] -= _boxsize[i];
             exitmarker = -1;
         }
@@ -93,6 +93,8 @@ void CConfiguration::checkBoxCrossing(){
             exitmarker = 1;
             if (_ppos[i] > 10){
                 cout << "Bad _ppos after boxcrossing. Aborting!" << endl;
+                cout << "_ppos b4 " << _ppos[i] + _boxsize[i] << endl;
+                cout << "_ppos after " << _ppos[i] << endl;
                 abort();
             }
         }
@@ -107,6 +109,11 @@ void CConfiguration::checkBoxCrossing(){
             }
             if (_ranU) _poly.shiftPolySign(i, exitmarker);
         }
+    }
+    //TODO del
+    if (!tracerInBox()){
+        cout << "\nTRACER NOT IN BOX!!!" << endl;
+        abort();
     }
 }
 
@@ -204,6 +211,11 @@ void CConfiguration::calcMobilityForces(){
             
             if (_LJPot && ( r_absSq.at(j) < _r_cSq )) calcLJPot(r_absSq.at(j), utmp, frtmp);
             
+            //TODO del
+            if (utmp > 10){
+                cout << "utmp " << utmp << "\nrSq " << r_absSq.at(j) << "\nindex j "  << j << endl;
+            }
+            
 
 
             Epot += utmp;
@@ -294,14 +306,32 @@ bool CConfiguration::testOverlap(){//TODO
     double r_i = 0, r_k = 0;
     double r_abs = 0;
     
-    for (int i = 0; i < 2; i++){
-        for (int k = i+1; k < 3; k++){
-            for (int ni = 0; ni < 2; ni++){
-                for (int nk = 0; nk < 2; nk++){
-                    r_i = _ppos[i] - ni*_boxsize[i];
-                    r_k = _ppos[k] - nk*_boxsize[k];       
-                    r_abs = sqrt(r_i * r_i + r_k * r_k); //distance to the rods
-                    if (r_abs < _pradius) overlaps = true;
+    if (_ranRod){
+        int i,j;
+        for (int axis=0;axis<3;axis++){
+            for (int abc=0;abc<_rodarr[axis].size();abc++){
+                for (int def=0;def<_rodarr[axis].size();def++){
+                    i = axis +1;
+                    if (i==3) i=0;
+                    j=3-(i+axis);
+                    if (testTracerOverlap(i, j, _rodarr[axis][abc][def].coord[i], _rodarr[axis][abc][def].coord[j])){
+                        ifdebug(cout << "Overlap for\naxis" << axis << "\nabc " << abc << "\ndef " << def << endl;)
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    else{
+        for (int i = 0; i < 2; i++){
+            for (int k = i+1; k < 3; k++){
+                for (int ni = 0; ni < 2; ni++){
+                    for (int nk = 0; nk < 2; nk++){
+                        r_i = _ppos[i] - ni*_boxsize[i];
+                        r_k = _ppos[k] - nk*_boxsize[k];       
+                        r_abs = sqrt(r_i * r_i + r_k * r_k); //distance to the rods
+                        if (r_abs < _pradius) overlaps = true;
+                    }
                 }
             }
         }
@@ -313,7 +343,7 @@ bool CConfiguration::testOverlap(){//TODO
 void CConfiguration::calcLJPot(const double rSq, double& U, double& Fr){
     //Function to calculate the Lennard-Jones Potential
     double  por6 = pow((_pradius*_pradius / rSq ), 3);      //por6 stands for "p over r to the power of 6" . The 2 comes from the fact, that I need the particle radius, not the particle size
-    ifdebug(if (4 * ( por6*por6 - por6 + 0.25 ) > 500) cout << "Very large LJ!!"<< endl;)
+    ifdebug(if (4 * ( por6*por6 - por6 + 0.25 ) > 50) cout << "Very large LJ!!"<< endl;)
     U += 4 * ( por6*por6 - por6 + 0.25 );
     Fr +=  24 / ( rSq ) * ( 2 * por6*por6 - por6 );
 }

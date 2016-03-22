@@ -221,6 +221,7 @@ private:
                     _rodarr[i][abc][2].coord[crossaxis] = atob(_b_array[crossaxis][1] , _b_array[crossaxis][1]+_b_array[crossaxis][2]);
                     _rodarr[i][abc][2].coord[j] = atob(cellInterval_aj , cellInterval_aj+_b_array[j][abc]);
                     overlaps= testTracerOverlap(crossaxis, j, _rodarr[i][abc][2].coord[crossaxis], _rodarr[i][abc][2].coord[j]);
+                    cout << "Repeat?";
                 }
                 overlaps=true;
                 while (overlaps){
@@ -255,20 +256,19 @@ private:
                 cellInterval_ai+=_b_array[i][abc];
             }
         }
-        // ifdebug(
-//        //TODO test if there is any overlap after rodUpdate
-//             for (int axis=0;axis<3;axis++){cellInterval_ai = - _b_array[i][0];
-//                 for (int abc=0;abc<3;abc++){//for i = axis + 1
-//                     cellInterval_aj = - _b_array[j][0];
-//                     for (int def=0;def<3;def++){
-//                         if ()
-//                 }
-//             }
-//         )
+        ifdebug(
+            if (testOverlap()){
+                cout << "\nERROR still overlap after newrod init!" << endl;
+                //abort();
+            }
+            )
     }
     
     bool testTracerOverlap(int i, int j, double ri, double rj){
-        if ((pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) < _r_cSq) return true;
+        if ((pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) < _r_cSq){
+            ifdebug(cout << "Overlap distance " << pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 ) << endl;)
+            return true;
+        }
         return false; 
     }
     
@@ -282,6 +282,16 @@ private:
             }
         }
         cout << "]," << endl;
+    }
+    
+    bool tracerInBox(){
+        for (int ax = 0;ax<3;ax++){
+            if ((_ppos[ax] < 0.) || (_ppos[ax] > _boxsize[ax])){
+                cout << "\n_boxsize[ax] " << _boxsize[ax] << "\n_ppos[ax] " << _ppos[ax] << endl;
+                return false;
+            }
+        }
+        return true;
     }
     
     
