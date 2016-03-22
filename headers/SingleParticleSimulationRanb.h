@@ -39,8 +39,9 @@ string createDataFolder(string distribution, double timestep, double simtime, do
     char range[5];
     sprintf(range, "%.3f", potRange);
     //In the definition of folder, the addition has to START WITH A STRING! for the compiler to know what to do (left to right).
-    string folder = "sim_data/" + distribution;
+    string folder = "sim_data";
     if (ranRod) folder += "/ranRod";
+    folder += "/distribution";
     if (randomPot) folder = folder + "/ranPot";
     if (steric) folder = folder + "/steric";    //TODO steric2
     folder = folder
