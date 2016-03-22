@@ -37,6 +37,10 @@ CConfiguration::CConfiguration(
         _alpha = 5.; _beta = 2.;
        cout << "_alpha = " << _alpha << endl;
    }
+   if (distribution == "gamma4"){
+        _alpha = 2.5; _beta = 4.;
+       cout << "_alpha = " << _alpha << endl;
+   }
 
     if (_ranU) {
        cout << "TODOOOOO" << endl;
