@@ -30,6 +30,9 @@ int main(int argc, const char* argv[]){
             exit(1);
         }
     }
+    
+    //TODO del 
+    cout << "RANROD " << ranRod << endl;
 
 
     int runs = atoi( argv[boolpar+1] );                       // Number of Simulation runs to get mean values from
@@ -55,8 +58,9 @@ int main(int argc, const char* argv[]){
     const int trajout = (int)(10/timestep);
         
     //Create data folders and print location as string to string "folder"
-    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranPot, ranRod);
+    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranRod, true);
     ifdebug(cout << "created folder. ";)
+    cout << "writing to folder " << folder << endl;
 
 
     //initialize averages
@@ -124,6 +128,7 @@ int main(int argc, const char* argv[]){
                 ifdebug(cout << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;)
             }
         }
+        cout << l << " " << endl;
         
         
     }//----------END OF RUNS-LOOP

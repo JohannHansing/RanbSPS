@@ -192,6 +192,7 @@ private:
     void updateRodsArr(int crossaxis,int exitmarker){//exitmarker is -1 for negative direction, or 1 for positive
         //delete all polymers orthogonal to crossaxis, that are outside the box now
         //update other polymer positions
+        bool overlaps;
         double cellInterval_ai, cellInterval_aj;
         int i,j;
         i=crossaxis+1;
@@ -215,10 +216,18 @@ private:
                 //Example: -_b_array[j][0] , 0
                    //      0 , _b_array[j][1]
                    //      _b_array[j][1], _b_array[j][1]+ _b_array[j][2]
-                _rodarr[i][abc][2].coord[crossaxis] = atob(_b_array[crossaxis][1] , _b_array[crossaxis][1]+_b_array[crossaxis][2]);
-                _rodarr[i][abc][2].coord[j] = atob(cellInterval_aj , cellInterval_aj+_b_array[j][abc]);
-                _rodarr[j][2][abc].coord[crossaxis] = atob(_b_array[crossaxis][1] , _b_array[crossaxis][1]+_b_array[crossaxis][2]);
-                _rodarr[j][2][abc].coord[i] = atob(cellInterval_ai , cellInterval_ai+_b_array[i][abc]);
+                overlaps=true;
+                while (overlaps){
+                    _rodarr[i][abc][2].coord[crossaxis] = atob(_b_array[crossaxis][1] , _b_array[crossaxis][1]+_b_array[crossaxis][2]);
+                    _rodarr[i][abc][2].coord[j] = atob(cellInterval_aj , cellInterval_aj+_b_array[j][abc]);
+                    overlaps= testTracerOverlap(crossaxis, j, _rodarr[i][abc][2].coord[crossaxis], _rodarr[i][abc][2].coord[j]);
+                }
+                overlaps=true;
+                while (overlaps){
+                    _rodarr[j][2][abc].coord[crossaxis] = atob(_b_array[crossaxis][1] , _b_array[crossaxis][1]+_b_array[crossaxis][2]);
+                    _rodarr[j][2][abc].coord[i] = atob(cellInterval_ai , cellInterval_ai+_b_array[i][abc]);
+                    overlaps= testTracerOverlap(crossaxis, i, _rodarr[j][2][abc].coord[crossaxis], _rodarr[j][2][abc].coord[i]);
+                }
                 cellInterval_aj+=_b_array[j][abc];
                 cellInterval_ai+=_b_array[i][abc];
             }
@@ -230,23 +239,37 @@ private:
             for (int abc=0;abc<3;abc++){
                 rotate_right(_rodarr[i][abc]);
                 // new rod positions
-                _rodarr[i][abc][0].coord[crossaxis] = atob(-_b_array[crossaxis][0] , 0);
-                _rodarr[i][abc][0].coord[j] = atob(cellInterval_aj , cellInterval_aj+_b_array[j][abc]);
-                _rodarr[j][0][abc].coord[crossaxis] = atob(-_b_array[crossaxis][0] , 0);
-                _rodarr[j][0][abc].coord[i] = atob(cellInterval_ai , cellInterval_ai+_b_array[i][abc]);
+                overlaps=true;
+                while (overlaps){
+                    _rodarr[i][abc][0].coord[crossaxis] = atob(-_b_array[crossaxis][0] , 0);
+                    _rodarr[i][abc][0].coord[j] = atob(cellInterval_aj , cellInterval_aj+_b_array[j][abc]);
+                    overlaps= testTracerOverlap(crossaxis, j, _rodarr[i][abc][0].coord[crossaxis], _rodarr[i][abc][0].coord[j]);
+                }
+                overlaps=true;
+                while (overlaps){
+                    _rodarr[j][0][abc].coord[crossaxis] = atob(-_b_array[crossaxis][0] , 0);
+                    _rodarr[j][0][abc].coord[i] = atob(cellInterval_ai , cellInterval_ai+_b_array[i][abc]);
+                    overlaps= testTracerOverlap(crossaxis, i, _rodarr[j][0][abc].coord[crossaxis], _rodarr[j][0][abc].coord[i]);
+                }
                 cellInterval_aj+=_b_array[j][abc];
                 cellInterval_ai+=_b_array[i][abc];
             }
         }
-        ifdebug(
-            for (int axis=0;axis<3;axis++){cellInterval_ai = - _b_array[i][0];
-                for (int abc=0;abc<3;abc++){//for i = axis + 1
-                    cellInterval_aj = - _b_array[j][0];
-                    for (int def=0;def<3;def++){
-                        if ()
-                }
-            }
-        )
+        // ifdebug(
+//        //TODO test if there is any overlap after rodUpdate
+//             for (int axis=0;axis<3;axis++){cellInterval_ai = - _b_array[i][0];
+//                 for (int abc=0;abc<3;abc++){//for i = axis + 1
+//                     cellInterval_aj = - _b_array[j][0];
+//                     for (int def=0;def<3;def++){
+//                         if ()
+//                 }
+//             }
+//         )
+    }
+    
+    bool testTracerOverlap(int i, int j, double ri, double rj){
+        if ((pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) < _r_cSq) return true;
+        return false; 
     }
     
     void prinRodPos(int axis){

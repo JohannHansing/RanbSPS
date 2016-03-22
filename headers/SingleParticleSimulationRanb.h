@@ -30,10 +30,8 @@ size_t sizeOfArray( const T(&)[ N ] )
 }
 
 
-
-       //createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranPot);
 string createDataFolder(string distribution, double timestep, double simtime, double potRange, double potStrength, 
-                        double particlesize, bool steric, bool randomPot, bool ranRod){
+                        double particlesize, bool steric, bool ranRod, const bool &randomPot){
     //NOTE: Maybe I can leave out dt, as soon as I settled on a timestep
     //NOTE: As soon as I create input-list with variables, I must change this function
     char range[5];
@@ -41,7 +39,7 @@ string createDataFolder(string distribution, double timestep, double simtime, do
     //In the definition of folder, the addition has to START WITH A STRING! for the compiler to know what to do (left to right).
     string folder = "sim_data";
     if (ranRod) folder += "/ranRod";
-    folder += "/" + distribution";
+    folder += "/" + distribution;
     if (randomPot) folder = folder + "/ranPot";
     if (steric) folder = folder + "/steric";    //TODO steric2
     folder = folder
