@@ -68,11 +68,15 @@ void CConfiguration::makeStep(){
     //move the particle according to the forces and record trajectory like watched by outsider
     for (int i = 0; i < 3; i++){
         _prevpos[i] = _ppos[i];
-        _ppos[i] += _timestep * _f_mob[i] + _mu_sto * _f_sto[i];
+        const double disp = _timestep * _f_mob[i] + _mu_sto * _f_sto[i];
+        _ppos[i] += disp;
         if (std::isnan(_ppos[i])){
             cout << "axis " << i << "\n_prevpos " << _prevpos[i] << "\n_ppos " << _ppos[i] << endl;
             cout << "_f_mob[i] " << _f_mob[i] << "\n_f_sto[i] " << _f_sto[i] << endl;
             abort();
+        }
+        if (disp > 0.5){
+            cout << "**** Way too big jump! " << endl;
         }
     }
 }
@@ -83,8 +87,8 @@ void CConfiguration::checkBoxCrossing(){
     for (int i = 0; i < 3; i++){
         exitmarker =0;
         if (_ppos[i] < 0){
-            MISTAKE! _ppos[i] += _boxsize[i];
-            _boxCoord[i] -= _boxsize[i];
+            _ppos[i] += _b_array[i][0];
+            _boxCoord[i] -= _b_array[i][0];
             exitmarker = -1;
         }
         else if (_ppos[i] > _boxsize[i]){
@@ -154,6 +158,7 @@ void CConfiguration::calcMobilityForces(){
     }
 
     for (int i = 0; i < 3; i++){
+        r_absSq.resize(0);
         int k = i + 1;   //k always one direction "further", i.e. if i = 0 = x-direction, then k = 1 = y-direction
         if ( k == 3 ) k = 0;
         int plane = 3 - (i+k); //this is the current plane of the cylindrical coordinates
@@ -186,7 +191,6 @@ void CConfiguration::calcMobilityForces(){
                 }
             }
         }
-        
         for (int j=0;j<r_absSq.size();j++){
             calculateExpPotential(r_absSq.at(j), utmp, frtmp);
 
@@ -224,6 +228,8 @@ void CConfiguration::calcMobilityForces(){
         }
     }
     _upot = Epot;
+    //TODO del
+    //cout << _upot << endl;
 }
 
 

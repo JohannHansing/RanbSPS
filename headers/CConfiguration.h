@@ -33,6 +33,7 @@ private:
     double _pradius;     //particle size is most relevant for scaling! (default = 1)
     double _boxsize[3];          // ALWAYS define boxsize through particlesize due to scaling!
     std::array<std::array<double,3>,3> _b_array;
+    std::array<std::array<double,3>,3> _b_array_prev;
     double _epsilon;
 
     //EXPONENTIAL Potential
@@ -128,6 +129,7 @@ private:
         ifdebug(cout << "Update Ranb\naxis " << axis << "  --  exitmarker " << exitmarker << endl;)
         double newb = ran_gamma();
         ifdebug(cout << "*" << newb << endl;)
+        _b_array_prev = _b_array;
         if (exitmarker==1){
             // rotation to the left
             std::rotate(_b_array[axis].begin(), _b_array[axis].begin() + 1, _b_array[axis].end());
@@ -198,15 +200,15 @@ private:
         i=crossaxis+1;
         if (i==3) i =0;
         j=3-(i+crossaxis);
-        // shift positions of rods
-        for (int abc=0; abc<3;abc++){
-            for (int def=0; def<3;def++){
-                _rodarr[i][abc][def].coord[crossaxis] -= exitmarker * _boxsize[crossaxis];
-                _rodarr[j][abc][def].coord[crossaxis] -= exitmarker * _boxsize[crossaxis];
-            }
-        }
         // rotate around rods in cells abc and def and reassign
         if (exitmarker == 1){
+            // shift positions of rods USING PREVIOUS b ARRAY _b_array_prev!
+            for (int abc=0; abc<3;abc++){
+                for (int def=0; def<3;def++){
+                    _rodarr[i][abc][def].coord[crossaxis] -= _b_array_prev[crossaxis][1];
+                    _rodarr[j][abc][def].coord[crossaxis] -= _b_array_prev[crossaxis][1];
+                }
+            }
             rotate_left(_rodarr[j]);
             cellInterval_ai = - _b_array[i][0];
             cellInterval_aj = - _b_array[j][0];
@@ -221,7 +223,7 @@ private:
                     _rodarr[i][abc][2].coord[crossaxis] = atob(_b_array[crossaxis][1] , _b_array[crossaxis][1]+_b_array[crossaxis][2]);
                     _rodarr[i][abc][2].coord[j] = atob(cellInterval_aj , cellInterval_aj+_b_array[j][abc]);
                     overlaps= testTracerOverlap(crossaxis, j, _rodarr[i][abc][2].coord[crossaxis], _rodarr[i][abc][2].coord[j]);
-                    cout << "Repeat?";
+                    //cout << "Repeat?";
                 }
                 overlaps=true;
                 while (overlaps){
@@ -234,6 +236,13 @@ private:
             }
         }
         else{
+            // shift positions of rods  
+            for (int abc=0; abc<3;abc++){
+                for (int def=0; def<3;def++){
+                    _rodarr[i][abc][def].coord[crossaxis] += _b_array_prev[crossaxis][0];
+                    _rodarr[j][abc][def].coord[crossaxis] += _b_array_prev[crossaxis][0];
+                }
+            }
             rotate_right(_rodarr[j]);
             cellInterval_ai = - _b_array[i][0];
             cellInterval_aj = - _b_array[j][0];
@@ -287,7 +296,7 @@ private:
     bool tracerInBox(){
         for (int ax = 0;ax<3;ax++){
             if ((_ppos[ax] < 0.) || (_ppos[ax] > _boxsize[ax])){
-                cout << "\n_boxsize[ax] " << _boxsize[ax] << "\n_ppos[ax] " << _ppos[ax] << endl;
+                cout << "\nax " << ax << "\n_boxsize[ax] " << _boxsize[ax] << "\n_ppos[ax] " << _ppos[ax] << endl;
                 return false;
             }
         }
@@ -350,6 +359,13 @@ public:
     	std::vector<double> pos (3);
     	for (int i = 0; i < 3; i++){
             pos[i] = _ppos[i] + _boxCoord[i];
+    	}
+    	return pos;
+    }
+    std::vector<double> getppos_rel(){ // returns pointer to current particle position array
+    	std::vector<double> pos (3);
+    	for (int i = 0; i < 3; i++){
+            pos[i] = _ppos[i];
     	}
     	return pos;
     }

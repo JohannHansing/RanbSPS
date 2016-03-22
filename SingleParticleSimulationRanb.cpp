@@ -127,6 +127,13 @@ int main(int argc, const char* argv[]){
                 trajectoryfile << fixed << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;
                 ifdebug(cout << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;)
             }
+            
+            // TODO del
+            
+            if (stepcount%10 == 0) {
+                std::vector<double> pos = conf.getppos_rel();
+                cout << stepcount * timestep << "\t" << pos[0] << " " << pos[1] << " " << pos[2] << endl;
+            }
         }
         cout << l << " " << endl;
         
