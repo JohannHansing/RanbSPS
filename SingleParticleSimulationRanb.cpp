@@ -130,7 +130,7 @@ int main(int argc, const char* argv[]){
             
             // TODO del
             
-            if (stepcount%10 == 0) {
+            if (stepcount%1 == 0) {
                 std::vector<double> pos = conf.getppos_rel();
                 cout << stepcount * timestep << "\t" << pos[0] << " " << pos[1] << " " << pos[2] << endl;
             }

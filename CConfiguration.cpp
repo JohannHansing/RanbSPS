@@ -50,7 +50,9 @@ CConfiguration::CConfiguration(
     initRanb();
     
     if (_ranRod){
-        initRodsArr();
+        //TODO rel
+        //initRodsArr();
+        initRodsRel();
     }
 }
 
@@ -75,7 +77,7 @@ void CConfiguration::makeStep(){
             cout << "_f_mob[i] " << _f_mob[i] << "\n_f_sto[i] " << _f_sto[i] << endl;
             abort();
         }
-        if (disp > 0.5){
+        if (abs(disp) > 0.5){
             cout << "**** Way too big jump! " << endl;
         }
     }
@@ -105,7 +107,9 @@ void CConfiguration::checkBoxCrossing(){
         if (exitmarker!=0){
             updateRanb(i,exitmarker);
             if (_ranRod){
-                updateRodsArr(i, exitmarker);
+                //TODO rel
+                //updateRodsArr(i, exitmarker);
+                updateRodsRel(i, exitmarker);
                 ifdebug(
                     cout << "[["<<i<<"," << exitmarker <<"] ";
                     prinRodPos(0); // cout print rod pos!
@@ -164,16 +168,16 @@ void CConfiguration::calcMobilityForces(){
         int plane = 3 - (i+k); //this is the current plane of the cylindrical coordinates
         int n = 0;     // reset counter for index of next rod in plane  n = 0, 1, 2, 3 -> only needed for ranPot
         
-        if (_ranRod){
-            for (int abc=0;abc<3;abc++){
-                for (int def=0;def<3;def++){
-                    r_i = _ppos[i] - _rodarr[plane][abc][def].coord[i];
-                    r_k = _ppos[k] - _rodarr[plane][abc][def].coord[k];
-                    r_absSq.push_back( r_i * r_i + r_k * r_k);
-                }
-            }
-        }
-        else{
+        // if (_ranRod){
+//             for (int abc=0;abc<3;abc++){
+//                 for (int def=0;def<3;def++){
+//                     r_i = _ppos[i] - _rodarr[plane][abc][def].coord[i];
+//                     r_k = _ppos[k] - _rodarr[plane][abc][def].coord[k];
+//                     r_absSq.push_back( r_i * r_i + r_k * r_k);
+//                 }
+//             }
+//         }
+//         else{
             //This creates the distance vectors from the rods to the tracer
             r_ks[0] = _ppos[k] + _b_array[k][0]; 
             r_is[0] = _ppos[i] + _b_array[i][0]; 
@@ -181,15 +185,21 @@ void CConfiguration::calcMobilityForces(){
                 r_ks[rodi+1] = r_ks[rodi] - _b_array[k][rodi]; 
                 r_is[rodi+1] = r_is[rodi] - _b_array[i][rodi]; 
             }
-            for (int nk = 0; nk < r_is.size(); nk++){
-                for (int ni = 0; ni < r_ks.size(); ni++){
+            int m = 0;//needed to adjust loop for ranRod
+            if (_ranRod) m = 1;
+            for (int nk = 0; nk < r_is.size()-m; nk++){
+                for (int ni = 0; ni < r_ks.size()-m; ni++){
                     r_i = r_is[ni];
                     r_k = r_ks[nk];
+                    if(_ranRod){//rodarr pos relative to cell
+                        r_i -= _rodarr[plane][ni][nk].coord[i];
+                        r_k -= _rodarr[plane][ni][nk].coord[k];
+                    }
 
                     r_absSq.push_back( r_i * r_i + r_k * r_k); //distance to the rods
                     //if (r_abs < 0.9*_pradius) cout << "Small rho distace: " << r_abs << endl;
                 }
-            }
+//            }
         }
         for (int j=0;j<r_absSq.size();j++){
             calculateExpPotential(r_absSq.at(j), utmp, frtmp);
@@ -305,7 +315,7 @@ void CConfiguration::modifyPot(double& U, double& Fr, double dist){
 
 //****************************STERIC HINDRANCE****************************************************//
 
-bool CConfiguration::testOverlap(){//TODO
+bool CConfiguration::testOverlap(){//TODO relRod
     //Function to check, whether the diffusing particle of size psize is overlapping with any one of the rods (edges of the box)
     //most if borrowed from moveParticleAndWatch()
     bool overlaps = false;    
