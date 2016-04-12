@@ -360,7 +360,7 @@ private:
                 while (overlaps){
                     _rodarr[j][0][abc].coord[crossaxis] = atob(0.,_b_array[crossaxis][0]);
                     _rodarr[j][0][abc].coord[i] = atob(0.,_b_array[i][abc]);
-                    //TODO overlaps= testTracerOverlap(crossaxis, i, _rodarr[j][0][abc].coord[crossaxis], _rodarr[j][0][abc].coord[i]);
+                    //TODO overlaps= testTracerOverlap(crossaxis, i, -_b_array[crossaxis][0]+_rodarr[j][0][abc].coord[crossaxis], _rodarr[j][0][abc].coord[i]);
                     overlaps=false;
                 }
             }
