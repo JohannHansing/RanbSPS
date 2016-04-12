@@ -48,7 +48,7 @@ CConfiguration::CConfiguration(
     //TODO del
     //testgamma();
     initRanb();
-    
+
     if (_ranRod){
         //TODO rel
         //initRodsArr();
@@ -77,7 +77,7 @@ void CConfiguration::makeStep(){
             cout << "_f_mob[i] " << _f_mob[i] << "\n_f_sto[i] " << _f_sto[i] << endl;
             abort();
         }
-        if (abs(disp) > 0.5){
+        if (abs(disp) > 5){
             cout << "**** Way too big jump! " << endl;
         }
     }
@@ -147,7 +147,8 @@ void CConfiguration::calcMobilityForces(){
     //calculate mobility forces from potential Epot - Unified version that includes 2ndOrder if k is larger than or equal 0.2 b , except if ranPot is activated.
     double r_i = 0, r_k = 0;
     array<double,4> r_is, r_ks;
-    vector<double> r_absSq;
+    vector<double> r_absSq_arr;
+    double r_absSq;
     double utmp = 0, frtmp = 0;     //temporary "hilfsvariables"
     double Epot = 0;
     double z1, z2;
@@ -162,28 +163,28 @@ void CConfiguration::calcMobilityForces(){
     }
 
     for (int i = 0; i < 3; i++){
-        r_absSq.resize(0);
+        r_absSq_arr.resize(0);
         int k = i + 1;   //k always one direction "further", i.e. if i = 0 = x-direction, then k = 1 = y-direction
         if ( k == 3 ) k = 0;
         int plane = 3 - (i+k); //this is the current plane of the cylindrical coordinates
         int n = 0;     // reset counter for index of next rod in plane  n = 0, 1, 2, 3 -> only needed for ranPot
-        
+
         // if (_ranRod){
 //             for (int abc=0;abc<3;abc++){
 //                 for (int def=0;def<3;def++){
 //                     r_i = _ppos[i] - _rodarr[plane][abc][def].coord[i];
 //                     r_k = _ppos[k] - _rodarr[plane][abc][def].coord[k];
-//                     r_absSq.push_back( r_i * r_i + r_k * r_k);
+//                     r_absSq_arr.push_back( r_i * r_i + r_k * r_k);
 //                 }
 //             }
 //         }
 //         else{
             //This creates the distance vectors from the rods to the tracer
-            r_ks[0] = _ppos[k] + _b_array[k][0]; 
-            r_is[0] = _ppos[i] + _b_array[i][0]; 
+            r_ks[0] = _ppos[k] + _b_array[k][0];
+            r_is[0] = _ppos[i] + _b_array[i][0];
             for (int rodi = 0; rodi < 3; rodi++){
-                r_ks[rodi+1] = r_ks[rodi] - _b_array[k][rodi]; 
-                r_is[rodi+1] = r_is[rodi] - _b_array[i][rodi]; 
+                r_ks[rodi+1] = r_ks[rodi] - _b_array[k][rodi];
+                r_is[rodi+1] = r_is[rodi] - _b_array[i][rodi];
             }
             int m = 0;//needed to adjust loop for ranRod
             if (_ranRod) m = 1;
@@ -196,46 +197,68 @@ void CConfiguration::calcMobilityForces(){
                         r_k -= _rodarr[plane][ni][nk].coord[k];
                     }
 
-                    r_absSq.push_back( r_i * r_i + r_k * r_k); //distance to the rods
+
+                    // NEW START
+                    r_absSq = r_i * r_i + r_k * r_k;
+                    calculateExpPotential(r_absSq, utmp, frtmp);
+                    if (_LJPot && ( r_absSq < _r_cSq )) calcLJPot(r_absSq, utmp, frtmp);
+
+                    //TODO del
+                    if (utmp > 10){
+                        cout << "utmp " << utmp << "\nrSq " << r_absSq << endl;
+                    }
+
+
+
+                    Epot += utmp;
+                    _f_mob[i] += frtmp * r_i;
+                    _f_mob[k] += frtmp * r_k;
+                    // NEW END
+
+
+
+
+
+                    r_absSq_arr.push_back( r_i * r_i + r_k * r_k); //distance to the rods
                     //if (r_abs < 0.9*_pradius) cout << "Small rho distace: " << r_abs << endl;
                 }
-//            }
-        }
-        for (int j=0;j<r_absSq.size();j++){
-            calculateExpPotential(r_absSq.at(j), utmp, frtmp);
-
-
-            // if (_ranU){
-//                     utmp = utmp * _poly.get_sign(plane, n);
-//                     frtmp = frtmp * _poly.get_sign(plane, n);
-//                     if (_ppos[plane] > z2){
-//                         if (! _poly.samesign(1, plane, n)){
-//                             _f_mob[plane] += utmp * 4 / _boxsize;              //this takes care of the derivative of the potential modification and resulting force
-//                             modifyPot(utmp, frtmp, _boxsize - _ppos[plane]);
-//                         }
-//                     }
-//                     else if (_ppos[plane] < z1){
-//                         if (! _poly.samesign(-1, plane, n)){
-//                             _f_mob[plane] -= utmp * 4 / _boxsize;              //this takes care of the derivative of the potential modification and resulting force
-//                             modifyPot(utmp, frtmp, _ppos[plane]);
-//                         }
-//                     }
-//                     n++;  //index of next rod in curent plane
-//                 }
-            
-            if (_LJPot && ( r_absSq.at(j) < _r_cSq )) calcLJPot(r_absSq.at(j), utmp, frtmp);
-            
-            //TODO del
-            if (utmp > 10){
-                cout << "utmp " << utmp << "\nrSq " << r_absSq.at(j) << "\nindex j "  << j << endl;
             }
-            
-
-
-            Epot += utmp;
-            _f_mob[i] += frtmp * r_i;
-            _f_mob[k] += frtmp * r_k;
-        }
+        //}
+//         for (int j=0;j<r_absSq_arr.size();j++){
+//             calculateExpPotential(r_absSq_arr.at(j), utmp, frtmp);
+//
+//
+//             // if (_ranU){
+// //                     utmp = utmp * _poly.get_sign(plane, n);
+// //                     frtmp = frtmp * _poly.get_sign(plane, n);
+// //                     if (_ppos[plane] > z2){
+// //                         if (! _poly.samesign(1, plane, n)){
+// //                             _f_mob[plane] += utmp * 4 / _boxsize;              //this takes care of the derivative of the potential modification and resulting force
+// //                             modifyPot(utmp, frtmp, _boxsize - _ppos[plane]);
+// //                         }
+// //                     }
+// //                     else if (_ppos[plane] < z1){
+// //                         if (! _poly.samesign(-1, plane, n)){
+// //                             _f_mob[plane] -= utmp * 4 / _boxsize;              //this takes care of the derivative of the potential modification and resulting force
+// //                             modifyPot(utmp, frtmp, _ppos[plane]);
+// //                         }
+// //                     }
+// //                     n++;  //index of next rod in curent plane
+// //                 }
+//
+//             if (_LJPot && ( r_absSq_arr.at(j) < _r_cSq )) calcLJPot(r_absSq_arr.at(j), utmp, frtmp);
+//
+//             //TODO del
+//             if (utmp > 10){
+//                 cout << "utmp " << utmp << "\nrSq " << r_absSq_arr.at(j) << "\nindex j "  << j << endl;
+//             }
+//
+//
+//
+//             Epot += utmp;
+//             _f_mob[i] += frtmp * r_i;
+//             _f_mob[k] += frtmp * r_k;
+//         }
     }
     _upot = Epot;
     //TODO del
@@ -318,10 +341,10 @@ void CConfiguration::modifyPot(double& U, double& Fr, double dist){
 bool CConfiguration::testOverlap(){//TODO relRod
     //Function to check, whether the diffusing particle of size psize is overlapping with any one of the rods (edges of the box)
     //most if borrowed from moveParticleAndWatch()
-    bool overlaps = false;    
+    bool overlaps = false;
     double r_i = 0, r_k = 0;
     double r_abs = 0;
-    
+
     if (_ranRod){
         int i,j;
         for (int axis=0;axis<3;axis++){
@@ -344,7 +367,7 @@ bool CConfiguration::testOverlap(){//TODO relRod
                 for (int ni = 0; ni < 2; ni++){
                     for (int nk = 0; nk < 2; nk++){
                         r_i = _ppos[i] - ni*_boxsize[i];
-                        r_k = _ppos[k] - nk*_boxsize[k];       
+                        r_k = _ppos[k] - nk*_boxsize[k];
                         r_abs = sqrt(r_i * r_i + r_k * r_k); //distance to the rods
                         if (r_abs < _pradius) overlaps = true;
                     }
@@ -576,4 +599,3 @@ void CConfiguration::countWallCrossing(int crossaxis, int exitmarker){
 
 
 */
-

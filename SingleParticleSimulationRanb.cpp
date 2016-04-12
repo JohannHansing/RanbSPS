@@ -21,7 +21,7 @@ int main(int argc, const char* argv[]){
     bool hpi = (strcmp(argv[8] , "true") == 0 ) ;          // hpi exp
     int boolpar = 8;
     ifdebug(cout << "copied bools. ";)
-    
+
     // Checking for correct structure of input arguments
     for (int k= 1; k < argc; k++ ) cout << "parameter " << k << " " << argv[k] << endl;
     for (int b_i=2; b_i<=boolpar; b_i++){
@@ -30,8 +30,8 @@ int main(int argc, const char* argv[]){
             exit(1);
         }
     }
-    
-    //TODO del 
+
+    //TODO del
     cout << "RANROD " << ranRod << endl;
 
 
@@ -40,23 +40,23 @@ int main(int argc, const char* argv[]){
     int simtime = atoi( argv[boolpar+3] );                   // simulation time
     int instantvalues = 200;
     unsigned int steps;
-    
+
     double particlesize = atof( argv[boolpar+4] );
     double urange = atof( argv[boolpar+5] );
     double ustrength = atof( argv[boolpar+6] );
     unsigned int saveInt;
     int instValIndex;                             //Counter for addInstantValue
-    
+
     ifdebug(cout << "copied  params. ";)
-    
+
     cout << "distribution " << distribution << endl;
 
 
-    
+
     steps = simtime/timestep;
     saveInt = steps/instantvalues;
     const int trajout = (int)(10/timestep);
-        
+
     //Create data folders and print location as string to string "folder"
     string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranRod, true);
     ifdebug(cout << "created folder. ";)
@@ -72,7 +72,7 @@ int main(int argc, const char* argv[]){
     CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, potentialMod, particlesize, recordPosHisto, includeSteric, ranPot, hpi, ranRod);
     ifdebug(cout << "created CConf conf. ";)
 
-    
+
     unsigned int stepcount = 0;
     ofstream trajectoryfile;
     trajectoryfile.open((folder + "/Coordinates/trajectory.txt").c_str());
@@ -120,45 +120,44 @@ int main(int argc, const char* argv[]){
                 conf.makeStep();
             }
             conf.checkBoxCrossing(); //check if particle has crossed the confinement of the box
-            
+
             stepcount++;
             if (stepcount%trajout == 0) {
                 std::vector<double> ppos = conf.getppos();
                 trajectoryfile << fixed << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;
                 ifdebug(cout << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;)
             }
-            
+
             // TODO del
-            
-            if (stepcount%1 == 0) {
-                std::vector<double> pos = conf.getppos_rel();
-                cout << stepcount * timestep << "\t" << pos[0] << " " << pos[1] << " " << pos[2] << endl;
-            }
+            // if (stepcount%1 == 0) {
+            //     std::vector<double> pos = conf.getppos_rel();
+            //     cout << stepcount * timestep << "\t" << pos[0] << " " << pos[1] << " " << pos[2] << endl;
+            // }
         }
-        cout << l << " " << endl;
-        
-        
+        if (l%100 == 0) cout << "run " << l << endl;
+
+
     }//----------END OF RUNS-LOOP
-    
+
 
 
     //watch out: Save average instant values at timeInterval: timestep * saveinterval saveInt!!!
     energyU.saveAverageInstantValues(saveInt*timestep);
     squareDisp.saveAverageInstantValues(saveInt*timestep);
 
-    
+
 
 
     //printReport(ranRod, conf.getwallcrossings(0), conf.getwallcrossings(1), conf.getwallcrossings(2), timestep, urange, ustrength, rodDist, particlesize, runs,
     //        sizeOfArray(timestep), sizeOfArray(urange), sizeOfArray(ustrength), sizeOfArray(rodDist), sizeOfArray(particlesize), potentialMod, includeSteric);
 
-    
+
     cout << "Simulation Finished" << endl;
-    
+
     //If settingsFile is saved, then the simulation was successfull
     settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, potentialMod, recordMFP, includeSteric, ranPot, hpi, distribution);
-	
+
     trajectoryfile.close();
-	
+
     return 0;
 }

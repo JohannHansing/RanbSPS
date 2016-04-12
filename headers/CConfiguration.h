@@ -18,7 +18,7 @@
 #include "CPolymers.h"
 #include "CRod.h"
 
-#define ifdebug(x)  
+#define ifdebug(x)
 
 using namespace std;
 
@@ -79,20 +79,20 @@ private:
         boost::uniform_01<boost::mt19937&> dist(*m_igen);
         return dist();
     }
-    
+
     double atob(double a, double b){
         ifdebug(if (a >= b) cout << "a " << a << "\nb " << b << endl;)
         boost::variate_generator<boost::mt19937&, boost::random::uniform_real_distribution<>> ran_gen(*m_igen, boost::random::uniform_real_distribution<>(a, b));
         return ran_gen();
     }
-    
+
     int ran_sign(){
     // the variate generator uses _igen (int rand number generator),
     // samples from uniform integer distribution 0, 1
         boost::variate_generator<boost::mt19937&, boost::uniform_int<>> zeroone(*m_igen, boost::uniform_int<>(0, 1));
 	return (zeroone() * 2) - 1; //this calculation makes value either -1 or 1
     }
-    
+
     double ran_gamma(){
         // http://www.boost.org/doc/libs/1_58_0/doc/html/boost/random/gamma_distribution.html
         // Mean of gamma dist is alpha* beta
@@ -100,7 +100,7 @@ private:
                 *m_igen, boost::gamma_distribution<double>(_alpha, _beta));
         return ran_gen();
     }
-    
+
     void testgamma(){
 
         ofstream trajectoryfile;
@@ -114,7 +114,7 @@ private:
     void initRanb(){
         // For now, I just use a gamma distribution
         for (int i=0;i<3;i++){
-            if (_pradius < 4.5)  _boxsize[i] = 10; 
+            if (_pradius < 4.5)  _boxsize[i] = 10;
             else _boxsize[i] = 2*_pradius + 1;
             _b_array[i][1] = _boxsize[i];
             _b_array[i][0] = ran_gamma();
@@ -122,7 +122,7 @@ private:
             ifdebug(cout << _b_array[i][0] << "  " << _b_array[i][1] << "  " << _b_array[i][2] << endl;)
         }
     }
-    
+
     void updateRanb(int axis, int exitmarker){
         // ROTATE http://en.cppreference.com/w/cpp/algorithm/rotate
         //copy neighbor boxsize to _boxsize for particle box.
@@ -147,13 +147,13 @@ private:
         //copy to _boxsize array
         _boxsize[axis] = _b_array[axis][1];
     }
-    
-    
+
+
     //TODOD
     // ############# ranRod Stuff ##################
     std::array<std::array<std::array<CRod, 3>, 3>, 3> _rodarr; // vector to store polymer rods in cell, one vector stores polymers that are parallel to the same axis
 
-    
+
     void initRodsArr(){
         int i,j;
         double xipos, xjpos, cellInterval_ai, cellInterval_aj;
@@ -172,7 +172,7 @@ private:
                         xipos = 0;
                         xjpos = 0;
                     }
-                    //TODO  
+                    //TODO
                     // if ((abc ==1) && (def == 2)){
 //                         // The particle should have at least one escape path, so that it does net get stuck right from the start
 //                         xipos = 0;
@@ -189,7 +189,7 @@ private:
             )
         }
     }
-    
+
     void initRodsRel(){
         int i,j;
         double xipos, xjpos, cellInterval_ai, cellInterval_aj;
@@ -206,7 +206,7 @@ private:
                         xipos = 0;
                         xjpos = 0;
                     }
-                    //TODO  
+                    //TODO
                     // if ((abc ==1) && (def == 2)){
 //                         // The particle should have at least one escape path, so that it does net get stuck right from the start
 //                         xipos = 0;
@@ -221,7 +221,7 @@ private:
             )
         }
     }
-    
+
     //TODO
     void updateRodsArr(int crossaxis,int exitmarker){//exitmarker is -1 for negative direction, or 1 for positive
         //delete all polymers orthogonal to crossaxis, that are outside the box now
@@ -268,7 +268,7 @@ private:
             }
         }
         else{
-            // shift positions of rods  
+            // shift positions of rods
             for (int abc=0; abc<3;abc++){
                 for (int def=0; def<3;def++){
                     _rodarr[i][abc][def].coord[crossaxis] += _b_array_prev[crossaxis][0];
@@ -304,11 +304,14 @@ private:
             }
         )
     }
-    
+
+
+
     void updateRodsRel(int crossaxis,int exitmarker){//exitmarker is -1 for negative direction, or 1 for positive
         //delete all polymers orthogonal to crossaxis, that are outside the box now
         //update other polymer positions
-        cout << "update rods\ncrossaxis " << crossaxis << " -- exitm " << exitmarker << endl; 
+        //TODO del
+        // cout << "update rods\ncrossaxis " << crossaxis << " -- exitm " << exitmarker << endl;
         bool overlaps;
         double cellInterval_ai, cellInterval_aj;
         int i,j;
@@ -363,27 +366,27 @@ private:
             }
         }
     }
-    
+
     bool testTracerOverlap(int i, int j, double ri, double rj){
         if ((pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) < _r_cSq){
             ifdebug(cout << "Overlap distance " << pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 ) << endl;)
             return true;
         }
-        return false; 
+        return false;
     }
-    
+
     void prinRodPos(int axis){
         for (int irod=0;irod<_rodarr[axis].size();irod++){
             for (int jrod=0;jrod<_rodarr[axis].size();jrod++){
                 double rx =_rodarr[axis][irod][jrod].coord[0];
-                double ry =_rodarr[axis][irod][jrod].coord[1];     
+                double ry =_rodarr[axis][irod][jrod].coord[1];
                 double rz =_rodarr[axis][irod][jrod].coord[2];
                 cout << ",[" << rx << "," << ry << "," << rz << "]";
             }
         }
         cout << "]," << endl;
     }
-    
+
     bool tracerInBox(){
         for (int ax = 0;ax<3;ax++){
             if ((_ppos[ax] < 0.) || (_ppos[ax] > _boxsize[ax])){
@@ -393,7 +396,7 @@ private:
         }
         return true;
     }
-    
+
     // bool rodinCell(){
 //         for (int axis = 0;axis<3;axis++){
 //             int i,j;
@@ -418,9 +421,9 @@ private:
 //         }
 //         return true;
 //     }
-    
-    
-    
+
+
+
     template<typename T, size_t N>
     void rotate_left(std::array<T,N> & arr){
         // rotation to the left
