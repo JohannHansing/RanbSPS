@@ -30,8 +30,8 @@ size_t sizeOfArray( const T(&)[ N ] )
 }
 
 
-string createDataFolder(string distribution, double timestep, double simtime, double potRange, double potStrength, 
-                        double particlesize, bool steric, bool ranRod, const bool &randomPot){
+string createDataFolder(string distribution, double timestep, double simtime, double potRange, double potStrength,
+                        double particlesize, bool steric, bool ranRod, bool randomPot){
     //NOTE: Maybe I can leave out dt, as soon as I settled on a timestep
     //NOTE: As soon as I create input-list with variables, I must change this function
     char range[5];
@@ -72,8 +72,6 @@ void settingsFile(string folder, bool ranRod, double particlesize, double timest
     settingsfile << "p " << particlesize << endl;
     settingsfile << "dt " << timestep  << endl << "runs " << runs << endl << "steps " << steps << endl << "time: " << timestep*steps << endl;
     settingsfile << "k " << potRange << endl << "U_0 " << potStrength << endl;
-    
+
     settingsfile.close();
 }
-
-
