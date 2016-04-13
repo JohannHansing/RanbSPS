@@ -113,7 +113,7 @@ private:
     double new_b(){
         // Function to return new random boxsize b - this assures that the new b is larger than a minimum value to avoid problems with the particle leaving the simulation box.
         double newb = ran_gamma();
-        while ( newb < 1.5){
+        while ( newb < 0.5){
             newb = ran_gamma();
         }
         return newb;
