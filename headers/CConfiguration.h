@@ -101,8 +101,7 @@ private:
         return ran_gen();
     }
 
-    void testgamma(){
-
+    void testgamma(){//test function to check functionality of boost gamma generator --> It works!
         ofstream trajectoryfile;
         trajectoryfile.open(("tmp_gamma.txt"));
         for (int i=0;i<100000;i++){
@@ -111,14 +110,23 @@ private:
         trajectoryfile.close();
     }
 
+    double new_b(){
+        // Function to return new random boxsize b - this assures that the new b is larger than a minimum value to avoid problems with the particle leaving the simulation box.
+        double newb = ran_gamma();
+        while ( newb < 1.5){
+            newb = ran_gamma();
+        }
+        return newb;
+    }
+
     void initRanb(){
         // For now, I just use a gamma distribution
         for (int i=0;i<3;i++){
             if (_pradius < 4.5)  _boxsize[i] = 10;
             else _boxsize[i] = 2*_pradius + 1;
             _b_array[i][1] = _boxsize[i];
-            _b_array[i][0] = ran_gamma();
-            _b_array[i][2] = ran_gamma();
+            _b_array[i][0] = new_b();
+            _b_array[i][2] = new_b();
             ifdebug(cout << _b_array[i][0] << "  " << _b_array[i][1] << "  " << _b_array[i][2] << endl;)
         }
     }
@@ -127,7 +135,7 @@ private:
         // ROTATE http://en.cppreference.com/w/cpp/algorithm/rotate
         //copy neighbor boxsize to _boxsize for particle box.
         ifdebug(cout << "Update Ranb\naxis " << axis << "  --  exitmarker " << exitmarker << endl;)
-        double newb = ran_gamma();
+        double newb = new_b();
         ifdebug(cout << "*" << newb << endl;)
         _b_array_prev = _b_array;
         if (exitmarker==1){
