@@ -16,7 +16,7 @@ CConfiguration::CConfiguration(
     _potStrength = potStrength;
     _pradius = psize/2;
     _r_cSq = pow(1.122462 * _pradius,2);
-    _cutoffExpSq = 5*_potRange;
+    _cutoffExpSq = pow(5*_potRange,2);
     _timestep = timestep;
     _ranRod = ranRod;
     _potMod = potMod;
@@ -321,7 +321,7 @@ void CConfiguration::calculateExpPotential(const double rSq, double& U, double& 
 
 
 void CConfiguration::calculateExpHPI(const double r, double& U, double& Fr){
-    cout << "NOTHING HERE" << endl;
+    cout << "\n\n.... NOTHING HERE ..." << endl;
     abort();
 //	double u = _hpi_u * exp( - r / _hpi_k);
 //	U += u;
