@@ -9,8 +9,8 @@ CConfiguration::CConfiguration(){
 }
 
 CConfiguration::CConfiguration(
-        string distribution, double timestep,  double potRange,  double potStrength, const bool potMod,
-        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi, bool ranRod){
+        string distribution, double timestep,  double potRange,  double potStrength, const bool rand,
+        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi, bool ranRod, double dvar){
     setRanNumberGen(0);
     _potRange = potRange;
     _potStrength = potStrength;
@@ -19,28 +19,40 @@ CConfiguration::CConfiguration(
     _cutoffExpSq = pow(5*_potRange,2);
     _timestep = timestep;
     _ranRod = ranRod;
-    _potMod = potMod;
     _LJPot = (steric == false) && (psize != 0);
     _ranU = ranU;
+    _rand = rand;
+    _dvar = dvar;
     _poly = CPolymers();
     _upot = 0;
     _mu_sto = sqrt( 2 * _timestep );                 //timestep for stochastic force
     for (int i = 0; i < 3; i++){
-        _ppos[i] = 5;
-        _startpos[i] = 5;
+        _ppos[i] = _bdef/2.;
+        _startpos[i] = _ppos[i];
         _entryside[i] = 0;
         _wallcrossings[i] = 0;
         _boxCoord[i] = 0;
-        _prevpos[i] = 5;
+        _prevpos[i] = _ppos[i];
     }
-   if (distribution == "gamma2"){
+    if (distribution=="gamma"){
+       cout << "_alpha = " << _alpha << endl;
+    }
+    else if (distribution == "gamma2"){
         _alpha = 5.; _beta = 2.;
        cout << "_alpha = " << _alpha << endl;
-   }
-   if (distribution == "gamma4"){
+    }
+    else if (distribution == "gamma4"){
         _alpha = 2.5; _beta = 4.;
        cout << "_alpha = " << _alpha << endl;
-   }
+    }
+    else if (distribution == "fixb" ){
+       _fixb = true;
+       cout << "-----> b fixed !" << endl;
+    }
+    else {
+        cout << "Invalid distribution!\nAborting!!!!!!!!!!" << endl;
+        abort();
+    }
 
     if (_ranU) {
        cout << "TODOOOOO" << endl;
@@ -54,6 +66,7 @@ CConfiguration::CConfiguration(
         initRodsArr();
         //initRodsRel();
     }
+    if (_rand) initRand();
 }
 
 void CConfiguration::updateStartpos(){
@@ -107,14 +120,17 @@ void CConfiguration::checkBoxCrossing(){
         }
         if (exitmarker!=0){
             updateRanb(i,exitmarker);
-            if (_ranRod){
-                //TODO rel
-                updateRodsArr(i, exitmarker);
-                //updateRodsRel(i, exitmarker);
+            if (_rand){
+                updateRand(i,exitmarker);
                 ifdebug(
                     cout << "[["<<i<<"," << exitmarker <<"] ";
                     prinRodPos(0); // cout print rod pos!
                 )
+            }
+            if (_ranRod){
+                //TODO rel
+                updateRodsArr(i, exitmarker);
+                //updateRodsRel(i, exitmarker);
             }
             if (_ranU) _poly.shiftPolySign(i, exitmarker);
         }
@@ -177,6 +193,17 @@ void CConfiguration::calcMobilityForces(){
                 for (int def=0;def<3;def++){
                     r_i = _ppos[i] - _rodarr[plane][abc][def].coord[i];
                     r_k = _ppos[k] - _rodarr[plane][abc][def].coord[k];
+                    ri_arr.push_back(r_i);
+                    rk_arr.push_back(r_k);
+                    rSq_arr.push_back( r_i * r_i + r_k * r_k);
+                }
+            }
+        }
+        else if (_rand){
+            for (int abcd=0;abcd<4;abcd++){
+                for (int efgh=0;efgh<4;efgh++){
+                    r_i = _ppos[i] - _drods[plane][abcd][efgh].coord[i];
+                    r_k = _ppos[k] - _drods[plane][abcd][efgh].coord[k];
                     ri_arr.push_back(r_i);
                     rk_arr.push_back(r_k);
                     rSq_arr.push_back( r_i * r_i + r_k * r_k);
@@ -340,6 +367,22 @@ bool CConfiguration::testOverlap(){//TODO relRod
                     if (i==3) i=0;
                     j=3-(i+axis);
                     if (testTracerOverlap(i, j, _rodarr[axis][abc][def].coord[i], _rodarr[axis][abc][def].coord[j])){
+                        ifdebug(cout << "Overlap for\naxis" << axis << "\nabc " << abc << "\ndef " << def << endl;)
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    else if (_rand){
+        int i,j;
+        for (int axis=0;axis<3;axis++){
+            for (int abc=0;abc<_drods[axis].size();abc++){
+                for (int def=0;def<_drods[axis].size();def++){
+                    i = axis +1;
+                    if (i==3) i=0;
+                    j=3-(i+axis);
+                    if (testTracerOverlap(i, j, _drods[axis][abc][def].coord[i], _drods[axis][abc][def].coord[j])){
                         ifdebug(cout << "Overlap for\naxis" << axis << "\nabc " << abc << "\ndef " << def << endl;)
                         return true;
                     }

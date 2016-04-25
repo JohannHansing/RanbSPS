@@ -13,7 +13,7 @@ int main(int argc, const char* argv[]){
     //TRIGGERS:
     string distribution = argv[1];    // TODO
     bool ranRod = (strcmp(argv[2] , "true") == 0 ) ;
-    bool potentialMod = (strcmp(argv[3] , "true") == 0 ) ;       //BESSEL TODO
+    bool rand = (strcmp(argv[3] , "true") == 0 ) ;       //BESSEL TODO
     bool recordMFP = (strcmp(argv[4] , "true") == 0 ) ;
     bool recordPosHisto = (strcmp(argv[5] , "true") == 0 ) ;
     bool includeSteric = (strcmp(argv[6] , "true") == 0 ) ;  // steric 2
@@ -31,8 +31,14 @@ int main(int argc, const char* argv[]){
         }
     }
 
-    //TODO del
-    cout << "RANROD " << ranRod << endl;
+    if (distribution != "fixb" && rand){
+        cout << "b needs to be fixed at this time to include rand!" << endl;
+        abort();
+    }
+    if (ranRod  && rand){
+        cout << "Cant have both rand and ranRod!" << endl;
+        abort();
+    }
 
 
     int runs = atoi( argv[boolpar+1] );                       // Number of Simulation runs to get mean values from
@@ -44,6 +50,7 @@ int main(int argc, const char* argv[]){
     double particlesize = atof( argv[boolpar+4] );
     double urange = atof( argv[boolpar+5] );
     double ustrength = atof( argv[boolpar+6] );
+    double dvar = atof( argv[boolpar+7] );
     unsigned int saveInt;
     int instValIndex;                             //Counter for addInstantValue
 
@@ -58,7 +65,7 @@ int main(int argc, const char* argv[]){
     const int trajout = (int)(10/timestep);
 
     //Create data folders and print location as string to string "folder"
-    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranRod, ranPot);
+    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranRod, ranPot, rand, dvar);
     ifdebug(cout << "created folder. ";)
     cout << "writing to folder " << folder << endl;
 
@@ -69,7 +76,7 @@ int main(int argc, const char* argv[]){
     ifdebug(cout << "created CAverage files. ";)
 
     //initialize instance of configuration
-    CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, potentialMod, particlesize, recordPosHisto, includeSteric, ranPot, hpi, ranRod);
+    CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, rand, particlesize, recordPosHisto, includeSteric, ranPot, hpi, ranRod, dvar);
     ifdebug(cout << "created CConf conf. ";)
 
 
@@ -128,11 +135,11 @@ int main(int argc, const char* argv[]){
                 ifdebug(cout << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;)
             }
 
-            // TODO del
-            // if (stepcount%1 == 0) {
-            //     std::vector<double> pos = conf.getppos_rel();
-            //     cout << stepcount * timestep << "\t" << pos[0] << " " << pos[1] << " " << pos[2] << endl;
-            // }
+            //TODO del
+//             if (stepcount%1 == 0) {
+//                 std::vector<double> pos = conf.getppos_rel();
+//                 cout << stepcount * timestep << "\t" << pos[0] << " " << pos[1] << " " << pos[2] << endl;
+//             }
         }
         if (l%100 == 0) cout << "run " << l << endl;
 
@@ -155,7 +162,7 @@ int main(int argc, const char* argv[]){
     cout << "Simulation Finished" << endl;
 
     //If settingsFile is saved, then the simulation was successfull
-    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, potentialMod, recordMFP, includeSteric, ranPot, hpi, distribution);
+    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordMFP, includeSteric, ranPot, hpi, distribution, dvar);
 
     trajectoryfile.close();
 

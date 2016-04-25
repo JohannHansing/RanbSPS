@@ -32,6 +32,7 @@ private:
     double _mu_sto;
     double _pradius;     //particle size is most relevant for scaling! (default = 1)
     double _boxsize[3];          // ALWAYS define boxsize through particlesize due to scaling!
+    double _bdef = 10;     //default boxsize
     std::array<std::array<double,3>,3> _b_array;
     std::array<std::array<double,3>,3> _b_array_prev;
     double _epsilon;
@@ -51,6 +52,8 @@ private:
     bool _ranU;
     bool _hpi;
     bool _ranRod;
+    bool _fixb;
+    bool _rand;
 
     //COUNTERS AND INIT VALUES
     double _boxCoord[3];
@@ -70,7 +73,7 @@ private:
     double _f_mob[3];   //store mobility and stochastic force
     double _f_sto[3];
 
-    // Gamma distribution
+    // gamma distribution
     double _alpha = 10.;
     double _beta = 1.;
 
@@ -100,6 +103,11 @@ private:
                 *m_igen, boost::gamma_distribution<double>(_alpha, _beta));
         return ran_gen();
     }
+    
+    double getfixb(){
+        // helper function to fix boxsize
+        return _bdef;
+    }
 
     void testgamma(){//test function to check functionality of boost gamma generator --> It works!
         ofstream trajectoryfile;
@@ -112,6 +120,8 @@ private:
 
     double new_b(){
         // Function to return new random boxsize b - this assures that the new b is larger than a minimum value to avoid problems with the particle leaving the simulation box.
+        if (_fixb) {return _bdef;}
+        
         double newb = ran_gamma();
         while ( newb < 0.5){
             newb = ran_gamma();
@@ -122,22 +132,23 @@ private:
     void initRanb(){
         // For now, I just use a gamma distribution
         for (int i=0;i<3;i++){
-            if (_pradius < 4.5)  _boxsize[i] = 10;
-            else _boxsize[i] = 2*_pradius + 1;
+            _boxsize[i] = _bdef;
+            if ((_pradius > 4.5) && !_fixb )  _boxsize[i] = 2*_pradius + 1;
             _b_array[i][1] = _boxsize[i];
             _b_array[i][0] = new_b();
             _b_array[i][2] = new_b();
-            ifdebug(cout << _b_array[i][0] << "  " << _b_array[i][1] << "  " << _b_array[i][2] << endl;)
+            ifdebug(cout << "INIT Ranb :" << _b_array[i][0] << "  " << _b_array[i][1] << "  " << _b_array[i][2] << endl;)
         }
     }
 
     void updateRanb(int axis, int exitmarker){
+        _b_array_prev = _b_array;
+        if (_fixb) {return;}
         // ROTATE http://en.cppreference.com/w/cpp/algorithm/rotate
         //copy neighbor boxsize to _boxsize for particle box.
         ifdebug(cout << "Update Ranb\naxis " << axis << "  --  exitmarker " << exitmarker << endl;)
         double newb = new_b();
         ifdebug(cout << "*" << newb << endl;)
-        _b_array_prev = _b_array;
         if (exitmarker==1){
             // rotation to the left
             std::rotate(_b_array[axis].begin(), _b_array[axis].begin() + 1, _b_array[axis].end());
@@ -154,14 +165,14 @@ private:
         }
         //copy to _boxsize array
         _boxsize[axis] = _b_array[axis][1];
+        ifdebug(cout << "New b_array " << _b_array[axis][0] << "  " << _b_array[axis][1] << "  " << _b_array[axis][2] << endl;)
     }
 
 
     //TODOD
     // ############# ranRod Stuff ##################
     std::array<std::array<std::array<CRod, 3>, 3>, 3> _rodarr; // vector to store polymer rods in cell, one vector stores polymers that are parallel to the same axis
-
-
+    
     void initRodsArr(){
         int i,j;
         double xipos, xjpos, cellInterval_ai, cellInterval_aj;
@@ -282,6 +293,128 @@ private:
             }
         )
     }
+    
+    //************** Rand ***************    
+    double ran_norm(){
+        boost::variate_generator<boost::mt19937&, boost::normal_distribution<double> > ran_gen(
+                *m_igen, boost::normal_distribution<double>(0, _dvar));
+        return ran_gen(); 
+    }
+    
+    double _dvar = 1.;
+   
+    
+    std::array<std::array<std::array<CRod, 4>, 4>, 3> _drods; // vector to store polymer rods in cell, one vector stores polymers that are parallel to the same axis
+    void initRand(){
+        // Initialize system with random rod displacement d
+        bool overlaps;
+        double xipos, xjpos;
+        double tmp[4] = {-_bdef,0.,_bdef,2*_bdef};
+        for (int axis=0;axis<3;axis++){//axis 0 is x axis.
+            int i,j;
+            i=axis+1;
+            if (i==3) i=0;
+            j=3-(i+axis);
+            for (int abcd=0;abcd<4;abcd++){
+                for (int efgh=0;efgh<4;efgh++){
+                    overlaps=true;
+                    while (overlaps){
+                        xipos = tmp[abcd] + ran_norm();
+                        xjpos = tmp[efgh] + ran_norm();
+                        overlaps= testTracerOverlap(i, j, xipos, xjpos);
+                        //cout << "Repeat?";
+                    }
+                    
+                    CRod newRod = CRod(axis, xipos, xjpos );
+                    _drods[axis][abcd][efgh] = newRod;
+                }
+            }
+        }
+        ifdebug(prinRodPos(0);)
+    }
+    
+    void updateRand(int crossaxis,int exitmarker){
+        //exitmarker is -1 for negative direction, or 1 for positive
+        //delete all polymers orthogonal to crossaxis, that are outside the box now
+        //update other polymer positions
+        bool overlaps;
+        double cellInterval_ai, cellInterval_aj;
+        int i,j;
+        i=crossaxis+1;
+        if (i==3) i =0;
+        j=3-(i+crossaxis);
+        // rotate around rods in cells abc and def and reassign
+        if (exitmarker == 1){
+            // shift positions of rods USING PREVIOUS b ARRAY _b_array_prev!
+            for (int abcd=0; abcd<4;abcd++){
+                for (int efgh=0; efgh<4;efgh++){
+                    _drods[i][abcd][efgh].coord[crossaxis] -= _bdef;
+                    _drods[j][abcd][efgh].coord[crossaxis] -= _bdef;
+                }
+            }
+            rotate_left(_drods[j]);
+            cellInterval_ai = - _bdef;
+            cellInterval_aj = - _bdef;
+            for (int abcd=0;abcd<4;abcd++){
+                rotate_left(_drods[i][abcd]);
+                // new rod positions
+                //Example: -_b_array[j][0] , 0
+                   //      0 , _b_array[j][1]
+                   //      _b_array[j][1], _b_array[j][1]+ _b_array[j][2]
+                overlaps=true;
+                while (overlaps){
+                    _drods[i][abcd][3].coord[crossaxis] = 2*_bdef + ran_norm();
+                    _drods[i][abcd][3].coord[j] = cellInterval_aj + ran_norm();
+                    overlaps= testTracerOverlap(crossaxis, j, _drods[i][abcd][3].coord[crossaxis], _drods[i][abcd][3].coord[j]);
+                    //cout << "Repeat?";
+                }
+                overlaps=true;
+                while (overlaps){
+                    _drods[j][3][abcd].coord[crossaxis] = 2*_bdef + ran_norm();
+                    _drods[j][3][abcd].coord[i] = cellInterval_ai + ran_norm();
+                    overlaps= testTracerOverlap(crossaxis, i, _drods[j][3][abcd].coord[crossaxis], _drods[j][3][abcd].coord[i]);
+                }
+                cellInterval_aj+=_bdef;
+                cellInterval_ai+=_bdef;
+            }
+        }
+        else{
+            // shift positions of rods
+            for (int abcd=0; abcd<4;abcd++){
+                for (int efgh=0; efgh<4;efgh++){
+                    _drods[i][abcd][efgh].coord[crossaxis] += _bdef;
+                    _drods[j][abcd][efgh].coord[crossaxis] += _bdef;
+                }
+            }
+            rotate_right(_drods[j]);
+            cellInterval_ai = - _bdef;
+            cellInterval_aj = - _bdef;
+            for (int abcd=0;abcd<4;abcd++){
+                rotate_right(_drods[i][abcd]);
+                // new rod positions
+                overlaps=true;
+                while (overlaps){
+                    _drods[i][abcd][0].coord[crossaxis] = -_bdef + ran_norm();
+                    _drods[i][abcd][0].coord[j] = cellInterval_aj + ran_norm();
+                    overlaps= testTracerOverlap(crossaxis, j, _drods[i][abcd][0].coord[crossaxis], _drods[i][abcd][0].coord[j]);
+                }
+                overlaps=true;
+                while (overlaps){
+                    _drods[j][0][abcd].coord[crossaxis] = -_bdef + ran_norm();
+                    _drods[j][0][abcd].coord[i] = cellInterval_aj + ran_norm();
+                    overlaps= testTracerOverlap(crossaxis, i, _drods[j][0][abcd].coord[crossaxis], _drods[j][0][abcd].coord[i]);
+                }
+                cellInterval_aj+=_bdef;
+                cellInterval_ai+=_bdef;
+            }
+        }
+        ifdebug(
+            if (testOverlap()){
+                cout << "\nERROR still overlap after newrod init!" << endl;
+                //abort();
+            }
+        )
+    }
 
 
 
@@ -295,11 +428,11 @@ private:
     }
 
     void prinRodPos(int axis){
-        for (int irod=0;irod<_rodarr[axis].size();irod++){
-            for (int jrod=0;jrod<_rodarr[axis].size();jrod++){
-                double rx =_rodarr[axis][irod][jrod].coord[0];
-                double ry =_rodarr[axis][irod][jrod].coord[1];
-                double rz =_rodarr[axis][irod][jrod].coord[2];
+        for (int irod=0;irod<_drods[axis].size();irod++){
+            for (int jrod=0;jrod<_drods[axis].size();jrod++){
+                double rx =_drods[axis][irod][jrod].coord[0];
+                double ry =_drods[axis][irod][jrod].coord[1];
+                double rz =_drods[axis][irod][jrod].coord[2];
                 cout << ",[" << rx << "," << ry << "," << rz << "]";
             }
         }
@@ -373,8 +506,8 @@ private:
 public:
     CConfiguration();
     CConfiguration(
-        string distribution,double timestep,  double potRange,  double potStrength, const bool potMod,
-        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi, bool ranRod);
+        string distribution,double timestep,  double potRange,  double potStrength, const bool rand,
+        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi, bool ranRod, double dvar);
     void updateStartpos();
     void makeStep();
     void checkBoxCrossing();
