@@ -18,7 +18,7 @@
 #include "CPolymers.h"
 #include "CRod.h"
 
-#define ifdebug(x)
+#define ifdebug(x) x
 
 using namespace std;
 
@@ -198,37 +198,7 @@ private:
         }
     }
 
-    void initRodsRel(){
-        int i,j;
-        double xipos, xjpos, cellInterval_ai, cellInterval_aj;
-        for (int axis=0;axis<3;axis++){//axis 0 is x axis.
-            i = axis +1;
-            if (i==3) i=0;
-            j=3-(i+axis);
-            for (int abc=0;abc<3;abc++){//for i = axis + 1
-                for (int def=0;def<3;def++){// for j = axis + 2
-                    xipos = atob(0,_b_array[i][abc]);
-                    xjpos = atob(0,_b_array[j][def]);
-                    if ((abc ==1) && (def == 1)){
-                        // In the central cell, the polymer goes to the origin, so that the particle has space to fit
-                        xipos = 0;
-                        xjpos = 0;
-                    }
-                    //TODO
-                    // if ((abc ==1) && (def == 2)){
-//                         // The particle should have at least one escape path, so that it does net get stuck right from the start
-//                         xipos = 0;
-//                         xjpos = _b_array[j][1] + _b_array[j][2];
-//                     }
-                    _rodarr[axis][abc][def] = CRod(axis, xipos, xjpos );
-                }
-            }
-            ifdebug(
-                cout << axis << endl;
-                prinRodPos(axis);
-            )
-        }
-    }
+
 
     //TODO
     void updateRodsArr(int crossaxis,int exitmarker){//exitmarker is -1 for negative direction, or 1 for positive
@@ -315,69 +285,10 @@ private:
 
 
 
-    void updateRodsRel(int crossaxis,int exitmarker){//exitmarker is -1 for negative direction, or 1 for positive
-        //delete all polymers orthogonal to crossaxis, that are outside the box now
-        //update other polymer positions
-        //TODO del
-        // cout << "update rods\ncrossaxis " << crossaxis << " -- exitm " << exitmarker << endl;
-        bool overlaps;
-        double cellInterval_ai, cellInterval_aj;
-        int i,j;
-        i=crossaxis+1;
-        if (i==3) i =0;
-        j=3-(i+crossaxis);
-        // rotate around rods in cells abc and def and reassign
-        if (exitmarker == 1){
-            rotate_left(_rodarr[j]);
-            for (int abc=0;abc<3;abc++){
-                rotate_left(_rodarr[i][abc]);
-                // new rod positions
-                //Example: -_b_array[j][0] , 0
-                   //      0 , _b_array[j][1]
-                   //      _b_array[j][1], _b_array[j][1]+ _b_array[j][2]
-                overlaps=true;
-                while (overlaps){
-                    _rodarr[i][abc][2].coord[crossaxis] = atob(0,_b_array[crossaxis][2]);
-                    _rodarr[i][abc][2].coord[j] = atob(0, _b_array[j][abc]);
-                    //TODO overlaps= testTracerOverlap(crossaxis, j, _rodarr[i][abc][2].coord[crossaxis], _rodarr[i][abc][2].coord[j]);
-                    overlaps=false;
-                    //cout << "Repeat?";
-                }
-                overlaps=true;
-                while (overlaps){
-                    _rodarr[j][2][abc].coord[crossaxis] = atob(0, _b_array[crossaxis][2]);
-                    _rodarr[j][2][abc].coord[i] = atob(0, _b_array[i][abc]);
-                    //TODO overlaps= testTracerOverlap(crossaxis, i, _rodarr[j][2][abc].coord[crossaxis], _rodarr[j][2][abc].coord[i]);
-                    overlaps=false;
-                }
-            }
-        }
-        else{
-            rotate_right(_rodarr[j]);
-            for (int abc=0;abc<3;abc++){
-                rotate_right(_rodarr[i][abc]);
-                // new rod positions
-                overlaps=true;
-                while (overlaps){
-                    _rodarr[i][abc][0].coord[crossaxis] = atob(0.,_b_array[crossaxis][0]);
-                    _rodarr[i][abc][0].coord[j] = atob(0.,_b_array[j][abc]);
-                    //TODO overlaps= testTracerOverlap(crossaxis, j, _rodarr[i][abc][0].coord[crossaxis], _rodarr[i][abc][0].coord[j]);
-                    overlaps=false;
-                }
-                overlaps=true;
-                while (overlaps){
-                    _rodarr[j][0][abc].coord[crossaxis] = atob(0.,_b_array[crossaxis][0]);
-                    _rodarr[j][0][abc].coord[i] = atob(0.,_b_array[i][abc]);
-                    //TODO overlaps= testTracerOverlap(crossaxis, i, -_b_array[crossaxis][0]+_rodarr[j][0][abc].coord[crossaxis], _rodarr[j][0][abc].coord[i]);
-                    overlaps=false;
-                }
-            }
-        }
-    }
 
     bool testTracerOverlap(int i, int j, double ri, double rj){
         if ((pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) < _r_cSq){
-            ifdebug(cout << "Overlap distance " << pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 ) << endl;)
+            ifdebug(cout << "Overlap distance " << sqrt(pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) << endl;)
             return true;
         }
         return false;
@@ -498,7 +409,100 @@ public:
     }
 
 
+// _______________________________ OLD REL STUFF _____________________________________________________
 
+
+    // void updateRodsRel(int crossaxis,int exitmarker){//exitmarker is -1 for negative direction, or 1 for positive
+    //     //delete all polymers orthogonal to crossaxis, that are outside the box now
+    //     //update other polymer positions
+    //     //TODO del
+    //     // cout << "update rods\ncrossaxis " << crossaxis << " -- exitm " << exitmarker << endl;
+    //     bool overlaps;
+    //     double cellInterval_ai, cellInterval_aj;
+    //     int i,j;
+    //     i=crossaxis+1;
+    //     if (i==3) i =0;
+    //     j=3-(i+crossaxis);
+    //     // rotate around rods in cells abc and def and reassign
+    //     if (exitmarker == 1){
+    //         rotate_left(_rodarr[j]);
+    //         for (int abc=0;abc<3;abc++){
+    //             rotate_left(_rodarr[i][abc]);
+    //             // new rod positions
+    //             //Example: -_b_array[j][0] , 0
+    //                //      0 , _b_array[j][1]
+    //                //      _b_array[j][1], _b_array[j][1]+ _b_array[j][2]
+    //             overlaps=true;
+    //             while (overlaps){
+    //                 _rodarr[i][abc][2].coord[crossaxis] = atob(0,_b_array[crossaxis][2]);
+    //                 _rodarr[i][abc][2].coord[j] = atob(0, _b_array[j][abc]);
+    //                 //TODO overlaps= testTracerOverlap(crossaxis, j, _rodarr[i][abc][2].coord[crossaxis], _rodarr[i][abc][2].coord[j]);
+    //                 overlaps=false;
+    //                 //cout << "Repeat?";
+    //             }
+    //             overlaps=true;
+    //             while (overlaps){
+    //                 _rodarr[j][2][abc].coord[crossaxis] = atob(0, _b_array[crossaxis][2]);
+    //                 _rodarr[j][2][abc].coord[i] = atob(0, _b_array[i][abc]);
+    //                 //TODO overlaps= testTracerOverlap(crossaxis, i, _rodarr[j][2][abc].coord[crossaxis], _rodarr[j][2][abc].coord[i]);
+    //                 overlaps=false;
+    //             }
+    //         }
+    //     }
+    //     else{
+    //         rotate_right(_rodarr[j]);
+    //         for (int abc=0;abc<3;abc++){
+    //             rotate_right(_rodarr[i][abc]);
+    //             // new rod positions
+    //             overlaps=true;
+    //             while (overlaps){
+    //                 _rodarr[i][abc][0].coord[crossaxis] = atob(0.,_b_array[crossaxis][0]);
+    //                 _rodarr[i][abc][0].coord[j] = atob(0.,_b_array[j][abc]);
+    //                 //TODO overlaps= testTracerOverlap(crossaxis, j, _rodarr[i][abc][0].coord[crossaxis], _rodarr[i][abc][0].coord[j]);
+    //                 overlaps=false;
+    //             }
+    //             overlaps=true;
+    //             while (overlaps){
+    //                 _rodarr[j][0][abc].coord[crossaxis] = atob(0.,_b_array[crossaxis][0]);
+    //                 _rodarr[j][0][abc].coord[i] = atob(0.,_b_array[i][abc]);
+    //                 //TODO overlaps= testTracerOverlap(crossaxis, i, -_b_array[crossaxis][0]+_rodarr[j][0][abc].coord[crossaxis], _rodarr[j][0][abc].coord[i]);
+    //                 overlaps=false;
+    //             }
+    //         }
+    //     }
+    // }
+
+//     void initRodsRel(){
+//         int i,j;
+//         double xipos, xjpos, cellInterval_ai, cellInterval_aj;
+//         for (int axis=0;axis<3;axis++){//axis 0 is x axis.
+//             i = axis +1;
+//             if (i==3) i=0;
+//             j=3-(i+axis);
+//             for (int abc=0;abc<3;abc++){//for i = axis + 1
+//                 for (int def=0;def<3;def++){// for j = axis + 2
+//                     xipos = atob(0,_b_array[i][abc]);
+//                     xjpos = atob(0,_b_array[j][def]);
+//                     if ((abc ==1) && (def == 1)){
+//                         // In the central cell, the polymer goes to the origin, so that the particle has space to fit
+//                         xipos = 0;
+//                         xjpos = 0;
+//                     }
+//                     //TODO
+//                     // if ((abc ==1) && (def == 2)){
+// //                         // The particle should have at least one escape path, so that it does net get stuck right from the start
+// //                         xipos = 0;
+// //                         xjpos = _b_array[j][1] + _b_array[j][2];
+// //                     }
+//                     _rodarr[axis][abc][def] = CRod(axis, xipos, xjpos );
+//                 }
+//             }
+//             ifdebug(
+//                 cout << axis << endl;
+//                 prinRodPos(axis);
+//             )
+//         }
+//     }
 
 
 };

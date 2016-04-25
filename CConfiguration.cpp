@@ -101,6 +101,7 @@ void CConfiguration::checkBoxCrossing(){
                 cout << "Bad _ppos after boxcrossing. Aborting!" << endl;
                 cout << "_ppos b4 " << _ppos[i] + _boxsize[i] << endl;
                 cout << "_ppos after " << _ppos[i] << endl;
+                cout << "\naxis " << i << "\n_boxsize[ax] " << _boxsize[i] << endl;
                 abort();
             }
         }
@@ -193,8 +194,8 @@ void CConfiguration::calcMobilityForces(){
             //TODO rel
             int m = 0;//needed to adjust loop for relative ranRod
             // if (_ranRod) m = 1;
-            for (int nk = 0; nk < r_is.size()-m; nk++){
-                for (int ni = 0; ni < r_ks.size()-m; ni++){
+            for (int nk = 0; nk < r_ks.size()-m; nk++){
+                for (int ni = 0; ni < r_is.size()-m; ni++){
                     r_i = r_is[ni];
                     r_k = r_ks[nk];
                     // //TODO rel  -- THIS RELATIVE STUFF CAN BE DELETED SHOULD I DECIDE TO KEEP THE VERSION WITH THE ABSOLUTE POSITIONS OF THE RODS
@@ -202,25 +203,6 @@ void CConfiguration::calcMobilityForces(){
                     //     r_i -= _rodarr[plane][ni][nk].coord[i];
                     //     r_k -= _rodarr[plane][ni][nk].coord[k];
                     // }
-
-
-                    // // NEW START
-                    // r_absSq = r_i * r_i + r_k * r_k;
-                    // calculateExpPotential(r_absSq, utmp, frtmp);
-                    // if (_LJPot && ( r_absSq < _r_cSq )) calcLJPot(r_absSq, utmp, frtmp);
-                    //
-                    // //TODO del
-                    // if (utmp > 10){
-                    //     cout << "utmp " << utmp << "\nrSq " << r_absSq << endl;
-                    // }
-                    //
-                    //
-                    //
-                    // Epot += utmp;
-                    // _f_mob[i] += frtmp * r_i;
-                    // _f_mob[k] += frtmp * r_k;
-                    // // NEW END
-
 
                     ri_arr.push_back(r_i);
                     rk_arr.push_back(r_k);
@@ -231,7 +213,6 @@ void CConfiguration::calcMobilityForces(){
         }
         for (int j=0;j<rSq_arr.size();j++){
             calculateExpPotential(rSq_arr.at(j), utmp, frtmp);
-
 
             // if (_ranU){
 //                     utmp = utmp * _poly.get_sign(plane, n);
@@ -253,10 +234,10 @@ void CConfiguration::calcMobilityForces(){
 
             if (_LJPot && ( rSq_arr.at(j) < _r_cSq )) calcLJPot(rSq_arr.at(j), utmp, frtmp);
 
-
             //TODO del
-            if (utmp > 50){
-                cout << "utmp " << utmp << "\nrSq " << rSq_arr.at(j) << "\nindex j "  << j << endl;
+            if (utmp > 100){
+                cout << "utmp " << utmp << "\nr " << sqrt(rSq_arr.at(j)) << "\nindex j "  << j << "\nplane " << plane << endl;
+                cout << "ri " << ri_arr[j] << "\nrk " << rk_arr[j] << endl;
             }
 
 
