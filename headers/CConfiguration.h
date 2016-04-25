@@ -18,7 +18,7 @@
 #include "CPolymers.h"
 #include "CRod.h"
 
-#define ifdebug(x) x
+#define ifdebug(x) 
 
 using namespace std;
 
