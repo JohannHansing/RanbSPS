@@ -43,7 +43,7 @@ private:
     double _rodDistance;
     CPolymers _poly;
     double _cutoffExpSq;
-    double _r_cSq;    //cutoff for Lennard-Jones calculation (at minimum)
+    double _stericrSq;    //cutoff for Lennard-Jones calculation (at minimum)
 
 
     //bool Parameters
@@ -72,6 +72,9 @@ private:
     double _upot;
     double _f_mob[3];   //store mobility and stochastic force
     double _f_sto[3];
+    // rod parameters
+    double _polyrad;
+    double _polydiamSq;
 
     // gamma distribution
     double _alpha = 10.;
@@ -365,14 +368,18 @@ private:
                 while (overlaps){
                     _drods[i][abcd][3].coord[crossaxis] = 2*_bdef + ran_norm();
                     _drods[i][abcd][3].coord[j] = cellInterval_aj + ran_norm();
-                    overlaps= testTracerOverlap(crossaxis, j, _drods[i][abcd][3].coord[crossaxis], _drods[i][abcd][3].coord[j]);
+                    overlaps= testTracerOverlap(crossaxis, j, _drods[i][abcd][3].coord[crossaxis], _drods[i][abcd][3].coord[j])
+                        //TODO overlap
+                        || testRodOverlap(i, crossaxis, j, _drods[i][abcd][3].coord[crossaxis], _drods[i][abcd][3].coord[j]);
                     //cout << "Repeat?";
                 }
                 overlaps=true;
                 while (overlaps){
                     _drods[j][3][abcd].coord[crossaxis] = 2*_bdef + ran_norm();
                     _drods[j][3][abcd].coord[i] = cellInterval_ai + ran_norm();
-                    overlaps= testTracerOverlap(crossaxis, i, _drods[j][3][abcd].coord[crossaxis], _drods[j][3][abcd].coord[i]);
+                    overlaps= testTracerOverlap(crossaxis, i, _drods[j][3][abcd].coord[crossaxis], _drods[j][3][abcd].coord[i])
+                    //TODO overlap
+                        || testRodOverlap(j, crossaxis, i, _drods[j][3][abcd].coord[crossaxis], _drods[j][3][abcd].coord[i]);
                 }
                 cellInterval_aj+=_bdef;
                 cellInterval_ai+=_bdef;
@@ -396,13 +403,17 @@ private:
                 while (overlaps){
                     _drods[i][abcd][0].coord[crossaxis] = -_bdef + ran_norm();
                     _drods[i][abcd][0].coord[j] = cellInterval_aj + ran_norm();
-                    overlaps= testTracerOverlap(crossaxis, j, _drods[i][abcd][0].coord[crossaxis], _drods[i][abcd][0].coord[j]);
+                    overlaps= testTracerOverlap(crossaxis, j, _drods[i][abcd][0].coord[crossaxis], _drods[i][abcd][0].coord[j])
+                        //TODO overlap
+                        || testRodOverlap(i, crossaxis, j, _drods[i][abcd][0].coord[crossaxis], _drods[i][abcd][0].coord[j]);
                 }
                 overlaps=true;
                 while (overlaps){
                     _drods[j][0][abcd].coord[crossaxis] = -_bdef + ran_norm();
                     _drods[j][0][abcd].coord[i] = cellInterval_aj + ran_norm();
-                    overlaps= testTracerOverlap(crossaxis, i, _drods[j][0][abcd].coord[crossaxis], _drods[j][0][abcd].coord[i]);
+                    overlaps= testTracerOverlap(crossaxis, i, _drods[j][0][abcd].coord[crossaxis], _drods[j][0][abcd].coord[i])
+                        //TODO overlap
+                        || testRodOverlap(j, crossaxis, i, _drods[j][0][abcd].coord[crossaxis], _drods[j][0][abcd].coord[i]);
                 }
                 cellInterval_aj+=_bdef;
                 cellInterval_ai+=_bdef;
@@ -420,9 +431,25 @@ private:
 
 
     bool testTracerOverlap(int i, int j, double ri, double rj){
-        if ((pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) < _r_cSq){
+        if ((pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) < _stericrSq){
             ifdebug(cout << "Overlap distance " << sqrt(pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) << endl;)
             return true;
+        }
+        return false;
+    }
+    
+    //TODO overlap
+    bool testRodOverlap(int rodaxis, int i, int j, double ri, double rj){
+        double distSq;
+        if (_polyrad==0) return false;
+        for (auto & vrods : _drods[rodaxis]){
+            for (auto & rod :  vrods){
+                //rods axis need to have distance of a least a (i.e. polydiam)
+                distSq = pow(rod.coord[i] - ri,2) + pow(rod.coord[j] - rj,2);
+                if (  (distSq < _polydiamSq) && (distSq > 0.00001)  ){//The second clause is to avoid testing overlap with itself
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -441,7 +468,7 @@ private:
 
     bool tracerInBox(){
         for (int ax = 0;ax<3;ax++){
-            if ((_ppos[ax] < 0.) || (_ppos[ax] > _boxsize[ax])){
+            if ((_ppos[ax] < -0.1*_boxsize[ax]) || (_ppos[ax] > 1.1*_boxsize[ax])){
                 cout << "\nax " << ax << "\n_boxsize[ax] " << _boxsize[ax] << "\n_ppos[ax] " << _ppos[ax] << endl;
                 return false;
             }
@@ -507,7 +534,7 @@ public:
     CConfiguration();
     CConfiguration(
         string distribution,double timestep,  double potRange,  double potStrength, const bool rand,
-        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi, bool ranRod, double dvar);
+        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi, bool ranRod, double dvar, double polydiam);
     void updateStartpos();
     void makeStep();
     void checkBoxCrossing();

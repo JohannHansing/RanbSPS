@@ -31,7 +31,7 @@ size_t sizeOfArray( const T(&)[ N ] )
 
 
 string createDataFolder(string distribution, double timestep, double simtime, double potRange, double potStrength,
-                        double particlesize, bool steric, bool ranRod, bool randomPot, bool rand, double dvar){
+                        double particlesize, bool steric, bool ranRod, bool randomPot, bool rand, double dvar, double polydiam){
     //NOTE: Maybe I can leave out dt, as soon as I settled on a timestep
     //NOTE: As soon as I create input-list with variables, I must change this function
     char range[5];
@@ -46,6 +46,7 @@ string createDataFolder(string distribution, double timestep, double simtime, do
     folder = folder
             + "/dt" + toString(timestep)
             + "/t" + toString(simtime)
+            + "/a" + toString(polydiam)
             + "/p" + toString(particlesize)
             + "/k" + range
             + "/u" + toString(potStrength);
@@ -57,7 +58,7 @@ string createDataFolder(string distribution, double timestep, double simtime, do
 
 
 void settingsFile(string folder, bool ranRod, double particlesize, double timestep, double runs, double steps, double potStrength, double potRange,
-        bool rand, bool recordMFP, bool steric, bool randomPot, bool hpi, string distribution, double dvar){
+        bool rand, bool recordMFP, bool steric, bool randomPot, bool hpi, string distribution, double dvar, double polydiam){
     //Creates a file where the simulation settings are stored
     //MAYBE ALSO INCLUDE TIME AND DATE!!
     ofstream settingsfile;
@@ -73,7 +74,8 @@ void settingsFile(string folder, bool ranRod, double particlesize, double timest
     settingsfile << "p " << particlesize << endl;
     settingsfile << "dt " << timestep  << endl << "runs " << runs << endl << "steps " << steps << endl << "time: " << timestep*steps << endl;
     settingsfile << "k " << potRange << endl << "U_0 " << potStrength << endl;
-    settingsfile << "dvar " << dvar << endl << "U_0 " << potStrength << endl;
+    settingsfile << "dvar " << dvar << endl;
+    settingsfile << "a " << polydiam << endl;
 
     settingsfile.close();
 }

@@ -10,12 +10,15 @@ CConfiguration::CConfiguration(){
 
 CConfiguration::CConfiguration(
         string distribution, double timestep,  double potRange,  double potStrength, const bool rand,
-        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi, bool ranRod, double dvar){
+        double psize, const bool posHisto, const bool steric, const bool ranU, bool hpi, bool ranRod, double dvar, double polydiam){
     setRanNumberGen(0);
     _potRange = potRange;
     _potStrength = potStrength;
-    _pradius = psize/2;
-    _r_cSq = pow(1.122462 * _pradius,2);
+    _pradius = psize/2.;
+    //TODO overlap
+    _polyrad = polydiam/2.;//TODO test
+    _polydiamSq = polydiam*polydiam;
+    _stericrSq = pow(_pradius + _polyrad,2);
     _cutoffExpSq = pow(5*_potRange,2);
     _timestep = timestep;
     _ranRod = ranRod;
@@ -101,12 +104,12 @@ void CConfiguration::checkBoxCrossing(){
     int exitmarker = 0;
     for (int i = 0; i < 3; i++){
         exitmarker =0;
-        if (_ppos[i] < 0){
+        if (_ppos[i] < -0.05*_b_array[i][0]){//Only create new rod config if the particle has crossed the border by a certain fraction
             _ppos[i] += _b_array[i][0];
             _boxCoord[i] -= _b_array[i][0];
             exitmarker = -1;
         }
-        else if (_ppos[i] > _boxsize[i]){
+        else if (_ppos[i] > 1.05*_b_array[i][2]){//Only create new rod config if the particle has crossed the border by a certain fraction
             _ppos[i] -= _boxsize[i];
             _boxCoord[i] += _boxsize[i];
             exitmarker = 1;
@@ -162,6 +165,7 @@ void CConfiguration::calcStochasticForces(){
 
 void CConfiguration::calcMobilityForces(){
     //calculate mobility forces from potential Epot - Unified version that includes 2ndOrder if k is larger than or equal 0.2 b , except if ranPot is activated.
+    double rcSq = 1.25992 * _stericrSq;
     double r_i = 0, r_k = 0;
     array<double,4> r_is, r_ks;
     vector<double> ri_arr, rk_arr, rSq_arr;
@@ -259,7 +263,7 @@ void CConfiguration::calcMobilityForces(){
 //                     n++;  //index of next rod in curent plane
 //                 }
 
-            if (_LJPot && ( rSq_arr.at(j) < _r_cSq )) calcLJPot(rSq_arr.at(j), utmp, frtmp);
+            if (_LJPot && ( rSq_arr.at(j) < rcSq )) calcLJPot(rSq_arr.at(j), utmp, frtmp);
 
             //TODO del
             if (utmp > 100){
@@ -410,7 +414,7 @@ bool CConfiguration::testOverlap(){//TODO relRod
 
 void CConfiguration::calcLJPot(const double rSq, double& U, double& Fr){
     //Function to calculate the Lennard-Jones Potential
-    double  por6 = pow((_pradius*_pradius / rSq ), 3);      //por6 stands for "p over r to the power of 6" . The 2 comes from the fact, that I need the particle radius, not the particle size
+    double  por6 = pow((_stericrSq / rSq),3); //por6 stands for "p over r to the power of 6" . The 2 comes from the fact, that I need the particle radius, not the particle size
     ifdebug(if (4 * ( por6*por6 - por6 + 0.25 ) > 50) cout << "Very large LJ!!"<< endl;)
     U += 4 * ( por6*por6 - por6 + 0.25 );
     Fr +=  24 / ( rSq ) * ( 2 * por6*por6 - por6 );

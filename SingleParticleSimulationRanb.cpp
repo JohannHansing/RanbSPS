@@ -51,6 +51,7 @@ int main(int argc, const char* argv[]){
     double urange = atof( argv[boolpar+5] );
     double ustrength = atof( argv[boolpar+6] );
     double dvar = atof( argv[boolpar+7] );
+    double polydiam = atof( argv[boolpar+8] );
     unsigned int saveInt;
     int instValIndex;                             //Counter for addInstantValue
 
@@ -65,7 +66,7 @@ int main(int argc, const char* argv[]){
     const int trajout = (int)(10/timestep);
 
     //Create data folders and print location as string to string "folder"
-    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranRod, ranPot, rand, dvar);
+    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranRod, ranPot, rand, dvar,polydiam);
     ifdebug(cout << "created folder. ";)
     cout << "writing to folder " << folder << endl;
 
@@ -76,7 +77,7 @@ int main(int argc, const char* argv[]){
     ifdebug(cout << "created CAverage files. ";)
 
     //initialize instance of configuration
-    CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, rand, particlesize, recordPosHisto, includeSteric, ranPot, hpi, ranRod, dvar);
+    CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, rand, particlesize, recordPosHisto, includeSteric, ranPot, hpi, ranRod, dvar,polydiam);
     ifdebug(cout << "created CConf conf. ";)
 
 
@@ -162,7 +163,7 @@ int main(int argc, const char* argv[]){
     cout << "Simulation Finished" << endl;
 
     //If settingsFile is saved, then the simulation was successfull
-    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordMFP, includeSteric, ranPot, hpi, distribution, dvar);
+    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordMFP, includeSteric, ranPot, hpi, distribution, dvar, polydiam);
 
     trajectoryfile.close();
 
