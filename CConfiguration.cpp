@@ -153,7 +153,7 @@ void CConfiguration::checkBoxCrossing(){
 void CConfiguration::calcStochasticForces(){
 
     // the variate generator uses m_igen (int rand number generator),
-    // samples from normal distribution with variance 1 (later sqrt(2) is multiplied)
+    // samples from normal distribution with standard deviation 1 (later sqrt(2) is multiplied)
     boost::variate_generator<boost::mt19937&, boost::normal_distribution<double> > ran_gen(
             *m_igen, boost::normal_distribution<double>(0, 1));
 
@@ -234,7 +234,7 @@ void CConfiguration::calcMobilityForces(){
                 }
             }
         }
-//         cout << cnt << "  #####  ";
+        _distarr[i] = rSq_arr; //store distances for writing them to a file later
         for (int j=0;j<cnt;j++){
             calculateExpPotential(rSq_arr.at(j), utmp, frtmp);
 

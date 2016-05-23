@@ -64,6 +64,7 @@ private:
     double _resetpos;
     double _startpos[3];          //Stores where the particle starting position was. This is needed to calculate the mean square displacement
     double _prevpos[3];           //Stores previous particle position before particle is moved.
+    std::array<std::array<double, 16>, 3> _distarr;
 
     int _min, _max;        // parameters for determining up to which order neighboring rods are considered for the potential
 
@@ -566,6 +567,16 @@ public:
             pos[i] = _ppos[i];
     	}
     	return pos;
+    }
+    void writeDistances(ostream& distancesfile, unsigned int stepcount) {
+    // So far this only writes the tracer particle position
+	distancesfile << fixed << stepcount * _timestep << "\t";
+        for (auto & arr : _distarr){
+            for (auto & dist : arr){
+                distancesfile << dist << " ";
+            }
+        }
+        distancesfile << endl;
     }
 
 
