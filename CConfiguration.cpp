@@ -168,7 +168,7 @@ void CConfiguration::calcMobilityForces(){
     double rcSq = 1.25992 * _stericrSq;
     double r_i = 0, r_k = 0;
     array<double,4> r_is, r_ks;
-    vector<double> ri_arr, rk_arr, rSq_arr;
+    std::array<double, 16> ri_arr, rk_arr, rSq_arr;
     double r_absSq;
     double utmp = 0, frtmp = 0;     //temporary "hilfsvariables"
     double Epot = 0;
@@ -182,11 +182,10 @@ void CConfiguration::calcMobilityForces(){
     for (int l = 0; l < 3; l++) {
         _f_mob[l] = 0;
     }
+    
 
     for (int i = 0; i < 3; i++){
-        rSq_arr.resize(0);
-        ri_arr.resize(0);
-        rk_arr.resize(0);
+        unsigned int cnt=0;// counter to loop over array indices
         int k = i + 1;   //k always one direction "further", i.e. if i = 0 = x-direction, then k = 1 = y-direction
         if ( k == 3 ) k = 0;
         int plane = 3 - (i+k); //this is the current plane of the cylindrical coordinates
@@ -197,9 +196,10 @@ void CConfiguration::calcMobilityForces(){
                 for (int def=0;def<3;def++){
                     r_i = _ppos[i] - _rodarr[plane][abc][def].coord[i];
                     r_k = _ppos[k] - _rodarr[plane][abc][def].coord[k];
-                    ri_arr.push_back(r_i);
-                    rk_arr.push_back(r_k);
-                    rSq_arr.push_back( r_i * r_i + r_k * r_k);
+                    ri_arr[cnt]=(r_i);
+                    rk_arr[cnt]=(r_k);
+                    rSq_arr[cnt]=( r_i * r_i + r_k * r_k);
+                    cnt++;
                 }
             }
         }
@@ -208,9 +208,10 @@ void CConfiguration::calcMobilityForces(){
                 for (int efgh=0;efgh<4;efgh++){
                     r_i = _ppos[i] - _drods[plane][abcd][efgh].coord[i];
                     r_k = _ppos[k] - _drods[plane][abcd][efgh].coord[k];
-                    ri_arr.push_back(r_i);
-                    rk_arr.push_back(r_k);
-                    rSq_arr.push_back( r_i * r_i + r_k * r_k);
+                    ri_arr[cnt]=(r_i);
+                    rk_arr[cnt]=(r_k);
+                    rSq_arr[cnt]=( r_i * r_i + r_k * r_k);
+                    cnt++;
                 }
             }
         }
@@ -222,27 +223,19 @@ void CConfiguration::calcMobilityForces(){
                 r_ks[rodi+1] = r_ks[rodi] - _b_array[k][rodi];
                 r_is[rodi+1] = r_is[rodi] - _b_array[i][rodi];
             }
-            //TODO rel
-            int m = 0;//needed to adjust loop for relative ranRod
-            // if (_ranRod) m = 1;
-            for (int nk = 0; nk < r_ks.size()-m; nk++){
-                for (int ni = 0; ni < r_is.size()-m; ni++){
+            for (int nk = 0; nk < r_ks.size(); nk++){
+                for (int ni = 0; ni < r_is.size(); ni++){
                     r_i = r_is[ni];
                     r_k = r_ks[nk];
-                    // //TODO rel  -- THIS RELATIVE STUFF CAN BE DELETED SHOULD I DECIDE TO KEEP THE VERSION WITH THE ABSOLUTE POSITIONS OF THE RODS
-                    // if(_ranRod){//rodarr pos relative to cell
-                    //     r_i -= _rodarr[plane][ni][nk].coord[i];
-                    //     r_k -= _rodarr[plane][ni][nk].coord[k];
-                    // }
-
-                    ri_arr.push_back(r_i);
-                    rk_arr.push_back(r_k);
-                    rSq_arr.push_back( r_i * r_i + r_k * r_k); //distance to the rods
-                    //if (r_abs < 0.9*_pradius) cout << "Small rho distace: " << r_abs << endl;
+                    ri_arr[cnt]=(r_i);
+                    rk_arr[cnt]=(r_k);
+                    rSq_arr[cnt]=( r_i * r_i + r_k * r_k);
+                    cnt++;
                 }
             }
         }
-        for (int j=0;j<rSq_arr.size();j++){
+//         cout << cnt << "  #####  ";
+        for (int j=0;j<cnt;j++){
             calculateExpPotential(rSq_arr.at(j), utmp, frtmp);
 
             // if (_ranU){
