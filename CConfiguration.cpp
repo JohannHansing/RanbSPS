@@ -175,7 +175,7 @@ void CConfiguration::calcMobilityForces(){
     double z1, z2;
     if (_ranU){
         cout << "TODOOooOoOOoO calcMob for RanU" << endl;
-        //z1 = 1/4 * _boxsize;
+        //z1 = 1./4 * _boxsize;
         //z2 = _boxsize - z1;   //z is in cylindrical coordinates. This indicates above/below which value the exp potential is modifed for random signs.
     }
     //reset mobility forces to zero
@@ -260,7 +260,7 @@ void CConfiguration::calcMobilityForces(){
 
             //TODO del
             if (utmp > 100){
-                cout << "utmp " << utmp << "\nr " << sqrt(rSq_arr.at(j)) << "\nindex j "  << j << "\nplane " << plane << endl;
+                cout << "utmp " << utmp  <<"\nr " << sqrt(rSq_arr.at(j)) << "\nindex j "  << j << "\nplane " << plane << endl;
                 cout << "ri " << ri_arr[j] << "\nrk " << rk_arr[j] << endl;
             }
 
@@ -500,7 +500,7 @@ void CConfiguration::calcMobilityForces(){
     double Epot = 0;
     double z1, z2;
     if (_ranU){
-        z1 = 1/4 * _boxsize;
+        z1 = 1./4 * _boxsize;
         z2 = _boxsize - z1;   //z is in cylindrical coordinates. This indicates above/below which value the exp potential is modifed for random signs.
     }
     //reset mobility forces to zero

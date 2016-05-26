@@ -432,11 +432,7 @@ private:
 
 
     bool testTracerOverlap(int i, int j, double ri, double rj){
-        if ((pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) < _stericrSq){
-            ifdebug(cout << "Overlap distance " << sqrt(pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) << endl;)
-            return true;
-        }
-        return false;
+        return ((pow( _ppos[i] - ri , 2 ) + pow( _ppos[j] - rj , 2 )) < 1.13*_stericrSq);//make this a little bigger, so that it's out of reach of LJ
     }
     
     //TODO overlap
