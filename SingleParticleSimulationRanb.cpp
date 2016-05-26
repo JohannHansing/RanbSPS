@@ -86,7 +86,8 @@ int main(int argc, const char* argv[]){
     trajectoryfile.open((folder + "/Coordinates/trajectory.txt").c_str());
     
     ofstream distancesfile;
-    distancesfile.open((folder + "/Coordinates/squareDistances.txt").c_str());
+    // TODO distancefile
+    //distancesfile.open((folder + "/Coordinates/squareDistances.txt").c_str());
 
 
     //cout << "Starting Run Number: " << simcounter << " out of " << totalsims << endl;
@@ -138,7 +139,7 @@ int main(int argc, const char* argv[]){
                 trajectoryfile << fixed << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;
                 ifdebug(cout << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;)
                 //TODO pass distancefile to function in conf.
-                if (stepcount%(10*trajout) == 0) conf.writeDistances( distancesfile, stepcount);
+                //if (stepcount%(10*trajout) == 0) conf.writeDistances( distancesfile, stepcount);
             }
 
             //TODO del
@@ -171,7 +172,8 @@ int main(int argc, const char* argv[]){
     settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordMFP, includeSteric, ranPot, hpi, distribution, dvar, polydiam);
 
     trajectoryfile.close();
-    distancesfile.close();
+    // TODO distancefile
+    //distancesfile.close();
 
     return 0;
 }
