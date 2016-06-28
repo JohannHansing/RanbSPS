@@ -88,6 +88,9 @@ int main(int argc, const char* argv[]){
     ofstream distancesfile;
     // TODO distancefile
     //distancesfile.open((folder + "/Coordinates/squareDistances.txt").c_str());
+    
+    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordMFP, includeSteric, ranPot, hpi, distribution, dvar, polydiam);
+    
 
 
     //cout << "Starting Run Number: " << simcounter << " out of " << totalsims << endl;
@@ -168,8 +171,6 @@ int main(int argc, const char* argv[]){
 
     cout << "Simulation Finished" << endl;
 
-    //If settingsFile is saved, then the simulation was successfull
-    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordMFP, includeSteric, ranPot, hpi, distribution, dvar, polydiam);
 
     trajectoryfile.close();
     // TODO distancefile
