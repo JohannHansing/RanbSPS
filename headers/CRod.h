@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <vector>
+#include <array>
 #include <string>
 #include "boost/random.hpp"
 
