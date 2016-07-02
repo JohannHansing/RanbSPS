@@ -19,7 +19,7 @@ CConfiguration::CConfiguration(
     _polyrad = polydiam/2.;//TODO test
     _polydiamSq = polydiam*polydiam;
     _stericrSq = pow(_pradius + _polyrad,2);
-    _cutoffExpSq = pow(5*_potRange,2);
+    _cutoffExpSq = pow(8*_potRange,2);
     _timestep = timestep;
     _ranRod = ranRod;
     _LJPot = (steric == false) && (psize != 0);
