@@ -17,7 +17,7 @@ int main(int argc, const char* argv[]){
     bool recordMFP = (strcmp(argv[4] , "true") == 0 ) ;
     bool recordPosHisto = (strcmp(argv[5] , "true") == 0 ) ;
     bool includeSteric = (strcmp(argv[6] , "true") == 0 ) ;  // steric 2
-    bool ranPot = (strcmp(argv[7] , "true") == 0 ) ;
+    bool ranU = (strcmp(argv[7] , "true") == 0 ) ;
     bool hpi = (strcmp(argv[8] , "true") == 0 ) ;          // hpi exp
     int boolpar = 8;
     ifdebug(cout << "copied bools. ";)
@@ -37,6 +37,10 @@ int main(int argc, const char* argv[]){
     }
     if (ranRod  && rand){
         cout << "Cant have both rand and ranRod!" << endl;
+        abort();
+    }
+    if (ranRod  && ranU){
+        cout << "ranRod + ranU will not work properly due to definition of calcMobilityForces for ranU!" << endl;
         abort();
     }
 
@@ -66,7 +70,7 @@ int main(int argc, const char* argv[]){
     const int trajout = (int)(10/timestep);
 
     //Create data folders and print location as string to string "folder"
-    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranRod, ranPot, rand, dvar,polydiam);
+    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranRod, ranU, rand, dvar,polydiam);
     ifdebug(cout << "created folder. ";)
     cout << "writing to folder " << folder << endl;
 
@@ -77,7 +81,7 @@ int main(int argc, const char* argv[]){
     ifdebug(cout << "created CAverage files. ";)
 
     //initialize instance of configuration
-    CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, rand, particlesize, recordPosHisto, includeSteric, ranPot, hpi, ranRod, dvar,polydiam);
+    CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, rand, particlesize, recordPosHisto, includeSteric, ranU, hpi, ranRod, dvar,polydiam);
     ifdebug(cout << "created CConf conf. ";)
 
 
@@ -168,7 +172,7 @@ int main(int argc, const char* argv[]){
     cout << "Simulation Finished" << endl;
 
     //If settingsFile is saved, then the simulation was successfull
-    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordMFP, includeSteric, ranPot, hpi, distribution, dvar, polydiam);
+    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordMFP, includeSteric, ranU, hpi, distribution, dvar, polydiam);
 
     trajectoryfile.close();
     distancesfile.close();

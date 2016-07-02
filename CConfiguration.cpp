@@ -26,7 +26,6 @@ CConfiguration::CConfiguration(
     _ranU = ranU;
     _rand = rand;
     _dvar = dvar;
-    _poly = CPolymers();
     _upot = 0;
     _mu_sto = sqrt( 2 * _timestep );                 //timestep for stochastic force
     for (int i = 0; i < 3; i++){
@@ -57,9 +56,6 @@ CConfiguration::CConfiguration(
         abort();
     }
 
-    if (_ranU) {
-       cout << "TODOOOOO" << endl;
-    }
     //TODO del
     //testgamma();
     initRanb();
@@ -69,7 +65,10 @@ CConfiguration::CConfiguration(
         initRodsArr();
         //initRodsRel();
     }
-    if (_rand) initRand();
+    if (_rand){
+        cout << "init Rand..." << endl;
+        initRand();
+    }
 }
 
 void CConfiguration::updateStartpos(){
@@ -135,7 +134,13 @@ void CConfiguration::checkBoxCrossing(){
                 updateRodsArr(i, exitmarker);
                 //updateRodsRel(i, exitmarker);
             }
-            if (_ranU) _poly.shiftPolySign(i, exitmarker);
+            if (_ranU){
+                for (auto & vrods : _drods[i]){
+                    for (auto & rod :  vrods){
+                        rod.shiftSigns(exitmarker);
+                    }
+                }
+            }
         }
     }
     //TODO del
@@ -172,12 +177,6 @@ void CConfiguration::calcMobilityForces(){
     double r_absSq;
     double utmp = 0, frtmp = 0;     //temporary "hilfsvariables"
     double Epot = 0;
-    double z1, z2;
-    if (_ranU){
-        cout << "TODOOooOoOOoO calcMob for RanU" << endl;
-        //z1 = 1./4 * _boxsize;
-        //z2 = _boxsize - z1;   //z is in cylindrical coordinates. This indicates above/below which value the exp potential is modifed for random signs.
-    }
     //reset mobility forces to zero
     for (int l = 0; l < 3; l++) {
         _f_mob[l] = 0;
@@ -190,6 +189,12 @@ void CConfiguration::calcMobilityForces(){
         if ( k == 3 ) k = 0;
         int plane = 3 - (i+k); //this is the current plane of the cylindrical coordinates
         int n = 0;     // reset counter for index of next rod in plane  n = 0, 1, 2, 3 -> only needed for ranPot
+        double z1, z2, z1inv;
+        if (_ranU){
+            z1 = 0.25 * _boxsize[plane];
+            z2 = _boxsize[plane] - z1;   //z is in cylindrical coordinates. This indicates above/below which value the exp potential is modifed for random signs.
+            z1inv = 1./z1;
+        }
 
         if (_ranRod){
             for (int abc=0;abc<3;abc++){
@@ -234,33 +239,39 @@ void CConfiguration::calcMobilityForces(){
                 }
             }
         }
+        
         _distarr[i] = rSq_arr; //store distances for writing them to a file later
         for (int j=0;j<cnt;j++){
-            calculateExpPotential(rSq_arr.at(j), utmp, frtmp);
+            double rSq = rSq_arr.at(j);
+            calculateExpPotential(rSq, utmp, frtmp);
 
-            // if (_ranU){
-//                     utmp = utmp * _poly.get_sign(plane, n);
-//                     frtmp = frtmp * _poly.get_sign(plane, n);
-//                     if (_ppos[plane] > z2){
-//                         if (! _poly.samesign(1, plane, n)){
-//                             _f_mob[plane] += utmp * 4 / _boxsize;              //this takes care of the derivative of the potential modification and resulting force
-//                             modifyPot(utmp, frtmp, _boxsize - _ppos[plane]);
-//                         }
-//                     }
-//                     else if (_ppos[plane] < z1){
-//                         if (! _poly.samesign(-1, plane, n)){
-//                             _f_mob[plane] -= utmp * 4 / _boxsize;              //this takes care of the derivative of the potential modification and resulting force
-//                             modifyPot(utmp, frtmp, _ppos[plane]);
-//                         }
-//                     }
-//                     n++;  //index of next rod in curent plane
-//                 }
+            
+            if (_ranU){
+                int abcd = j/4; // This could be made more efficient by replacing the j loop with two loops abcd efgh and a counter j
+                int efgh = j%4;
+                int sign = _drods[plane][abcd][efgh].signs[1];
+                //cout << "abcd " << abcd << "efgh " << efgh << " sign: " << sign << endl;
+                utmp *= sign;
+                frtmp *= sign;
+                if (_ppos[plane] > z2){
+                    if (! _drods[plane][abcd][efgh].samesign[1]){
+                        _f_mob[plane] += utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
+                        modifyPot(utmp, frtmp, (_boxsize[plane] - _ppos[plane]) * z1inv);
+                    }
+                }
+                else if (_ppos[plane] < z1){
+                    if (! _drods[plane][abcd][efgh].samesign[0]){
+                        _f_mob[plane] -= utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
+                        modifyPot(utmp, frtmp, _ppos[plane] * z1inv);
+                    }
+                }
+            }
 
-            if (_LJPot && ( rSq_arr.at(j) < rcSq )) calcLJPot(rSq_arr.at(j), utmp, frtmp);
+            if (_LJPot && ( rSq < rcSq )) calcLJPot(rSq, utmp, frtmp);
 
             //TODO del
             if (utmp > 100){
-                cout << "utmp " << utmp  <<"\nr " << sqrt(rSq_arr.at(j)) << "\nindex j "  << j << "\nplane " << plane << endl;
+                cout << "utmp " << utmp  <<"\nr " << sqrt(rSq) << "\nindex j "  << j << "\nplane " << plane << endl;
                 cout << "ri " << ri_arr[j] << "\nrk " << rk_arr[j] << endl;
             }
 
@@ -326,7 +337,7 @@ void CConfiguration::calculateExpPotential(const double rSq, double& U, double& 
 
 
 void CConfiguration::calculateExpHPI(const double r, double& U, double& Fr){
-    cout << "\n\n.... NOTHING HERE ..." << endl;
+    cout << "\n\n....calculateExpHPI: NOTHING HERE ..." << endl;
     abort();
 //	double u = _hpi_u * exp( - r / _hpi_k);
 //	U += u;
@@ -338,12 +349,13 @@ void CConfiguration::calculateExpPotentialMOD(const double r, double& U, double&
     cout << "NOT DEFINED!!!!!!!" << endl;
 }
 
-void CConfiguration::modifyPot(double& U, double& Fr, double dist){
+void CConfiguration::modifyPot(double& U, double& Fr, double weight){
     //function to modify the potential according to the distance along the polymer axis to the next neighbor,
     //in case the next neighboring polymer part is of opposite sign
-    cout << "NOT DEFINED" << endl;
-//     U = U * 4 * dist/_boxsize;
-//     Fr = Fr * 4 * dist/_boxsize;
+    //the weight is determined by the distance to the point where the sign changes, divided by the boxsize: weight = 4 * dist / boxsize, such that it's 1 for dist=boxsize/4
+//    cout << "NOT DEFINED" << endl;
+    U *= weight;
+    Fr *= weight;
 }
 
 //****************************STERIC HINDRANCE****************************************************//

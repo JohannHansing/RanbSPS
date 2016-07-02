@@ -15,7 +15,6 @@
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/gamma_distribution.hpp>
 #include <boost/math/special_functions/bessel.hpp>
-#include "CPolymers.h"
 #include "CRod.h"
 
 #define ifdebug(x) 
@@ -41,7 +40,6 @@ private:
     double _potRange;         // Avoid values like 10/3 = 3.33333... ALWAYS define the Range of the exp potential through boxsize due to scaling!
     double _potStrength;      // rescaled U_0 for exponential Potential
     double _rodDistance;
-    CPolymers _poly;
     double _cutoffExpSq;
     double _stericrSq;    //cutoff for Lennard-Jones calculation (at minimum)
 
@@ -201,7 +199,7 @@ private:
 //                         xipos = 0;
 //                         xjpos = _b_array[j][1] + _b_array[j][2];
 //                     }
-                    _rodarr[axis][abc][def] = CRod(axis, xipos, xjpos );
+                    _rodarr[axis][abc][def] = CRod(axis, xipos, xjpos, _ranU, m_igen );
                     cellInterval_aj += _b_array[j][def];
                 }
                 cellInterval_ai += _b_array[i][abc];
@@ -308,7 +306,7 @@ private:
     double _dvar = 1.;
    
     
-    std::array<std::array<std::array<CRod, 4>, 4>, 3> _drods; // vector to store polymer rods in cell, one vector stores polymers that are parallel to the same axis
+    std::array<std::array<std::array<CRod, 4>, 4>, 3> _drods; // array to store polymer rods in simulation box, the outermost array stores polymers that are parallel to the same axis
     void initRand(){
         // Initialize system with random rod displacement d
         bool overlaps;
@@ -328,8 +326,7 @@ private:
                         overlaps= testTracerOverlap(i, j, xipos, xjpos);
                         //cout << "Repeat?";
                     }
-                    
-                    CRod newRod = CRod(axis, xipos, xjpos );
+                    CRod newRod = CRod(axis, xipos, xjpos, _ranU, m_igen );
                     _drods[axis][abcd][efgh] = newRod;
                 }
             }
