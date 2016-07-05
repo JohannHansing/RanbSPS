@@ -155,7 +155,10 @@ int main(int argc, const char* argv[]){
 //                 cout << stepcount * timestep << "\t" << pos[0] << " " << pos[1] << " " << pos[2] << endl;
 //             }
         }
-        if (l%100 == 0) cout << "run " << l << endl;
+        if (l%100 == 0){
+            cout << "run " << l << endl;
+            if (l==1000) energyU.saveAverageInstantValues(saveInt*timestep);
+        }
 
 
     }//----------END OF RUNS-LOOP
@@ -163,7 +166,6 @@ int main(int argc, const char* argv[]){
 
 
     //watch out: Save average instant values at timeInterval: timestep * saveinterval saveInt!!!
-    energyU.saveAverageInstantValues(saveInt*timestep);
     squareDisp.saveAverageInstantValues(saveInt*timestep);
 
 
