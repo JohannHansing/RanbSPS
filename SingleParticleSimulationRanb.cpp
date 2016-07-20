@@ -18,32 +18,18 @@ int main(int argc, const char* argv[]){
     bool recordPosHisto = (strcmp(argv[5] , "true") == 0 ) ;
     bool includeSteric = (strcmp(argv[6] , "true") == 0 ) ;  // steric 2
     bool ranU = (strcmp(argv[7] , "true") == 0 ) ;
-    bool hpi = (strcmp(argv[8] , "true") == 0 ) ;          // hpi exp
+    string tmp5 = argv[8];
     int boolpar = 8;
     ifdebug(cout << "copied bools. ";)
 
     // Checking for correct structure of input arguments
     for (int k= 1; k < argc; k++ ) cout << "parameter " << k << " " << argv[k] << endl;
-    for (int b_i=2; b_i<=boolpar; b_i++){
+    for (int b_i=2; b_i<boolpar; b_i++){
         if (!((strcmp(argv[b_i] , "true") == 0 )  || (strcmp(argv[b_i] , "false") == 0 ))){
             cerr << "Error; Bool parameter " << b_i << " is not either 'true' or 'false'!" << endl;
             exit(1);
         }
     }
-
-    if (distribution != "fixb" && rand){
-        cout << "b needs to be fixed at this time to include rand!" << endl;
-        abort();
-    }
-    if (ranRod  && rand){
-        cout << "Cant have both rand and ranRod!" << endl;
-        abort();
-    }
-    if (ranRod  && ranU){
-        cout << "ranRod + ranU will not work properly due to definition of calcMobilityForces for ranU!" << endl;
-        abort();
-    }
-
 
     int runs = atoi( argv[boolpar+1] );                       // Number of Simulation runs to get mean values from
     double timestep = atof( argv[boolpar+2] );
@@ -59,18 +45,31 @@ int main(int argc, const char* argv[]){
     unsigned int saveInt;
     int instValIndex;                             //Counter for addInstantValue
 
+    steps = simtime/timestep;
+    saveInt = steps/instantvalues;
+    const int trajout = (int)(10/timestep);
+    
+
     ifdebug(cout << "copied  params. ";)
 
     cout << "distribution " << distribution << endl;
 
-
-
-    steps = simtime/timestep;
-    saveInt = steps/instantvalues;
-    const int trajout = (int)(10/timestep);
+    if (distribution != "fixb" && rand){
+        cout << "b needs to be fixed at this time to include rand!" << endl;
+        abort();
+    }
+    if (ranRod  && rand){
+        cout << "Cant have both rand and ranRod!" << endl;
+        abort();
+    }
+    if (ranRod  && ranU){
+        cout << "ranRod + ranU will not work properly due to definition of calcMobilityForces for ranU!" << endl;
+        abort();
+    }
 
     //Create data folders and print location as string to string "folder"
-    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranRod, ranU, rand, dvar,polydiam);
+    string folder = createDataFolder(distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranRod, ranU, rand, 
+                             dvar,polydiam, tmp5);
     ifdebug(cout << "created folder. ";)
     cout << "writing to folder " << folder << endl;
 
@@ -81,7 +80,8 @@ int main(int argc, const char* argv[]){
     ifdebug(cout << "created CAverage files. ";)
 
     //initialize instance of configuration
-    CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, rand, particlesize, recordPosHisto, includeSteric, ranU, hpi, ranRod, dvar,polydiam);
+    CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, rand, particlesize, recordPosHisto, 
+                            includeSteric, ranU, ranRod, dvar,polydiam, tmp5);
     ifdebug(cout << "created CConf conf. ";)
 
 
@@ -91,9 +91,14 @@ int main(int argc, const char* argv[]){
     
     ofstream distancesfile;
     // TODO distancefile
-    //distancesfile.open((folder + "/Coordinates/squareDistances.txt").c_str());
+    distancesfile.open((folder + "/Coordinates/squareDistances.txt").c_str());
     
-    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordMFP, includeSteric, ranU, hpi, distribution, dvar, polydiam);
+    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordMFP, includeSteric, ranU, distribution, 
+                    dvar, polydiam, tmp5);
+                    
+    //create .xyz file to save the trajectory for VMD
+    string traj_file = folder + "/Coordinates/single_traj.xyz";
+    conf.saveXYZTraj(traj_file,0,"w");
     
 
 
@@ -146,15 +151,15 @@ int main(int argc, const char* argv[]){
                 trajectoryfile << fixed << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;
                 ifdebug(cout << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;)
                 //TODO pass distancefile to function in conf.
-                //if (stepcount%(10*trajout) == 0) conf.writeDistances( distancesfile, stepcount);
+                if (stepcount%(100*trajout) == 0) conf.writeDistances( distancesfile, stepcount);
             }
-
-            //TODO del
-//             if (stepcount%1 == 0) {
-//                 std::vector<double> pos = conf.getppos_rel();
-//                 cout << stepcount * timestep << "\t" << pos[0] << " " << pos[1] << " " << pos[2] << endl;
-//             }
+            
+            if (((i+1)%100 == 0) && (l == 0)){       //Save the first trajectory to file
+                conf.saveXYZTraj(traj_file, i, "a");                    // TODO change back ((i+1)%XXX == 0) to 100
+            }
         }
+        if (l==0) conf.saveXYZTraj(traj_file, steps, "c"); // Close XYZ traj_file
+        
         if (l%100 == 0){
             cout << "run " << l << endl;
             if (l==1000) energyU.saveAverageInstantValues(saveInt*timestep);
@@ -179,7 +184,7 @@ int main(int argc, const char* argv[]){
 
     trajectoryfile.close();
     // TODO distancefile
-    //distancesfile.close();
+    distancesfile.close();
 
     return 0;
 }

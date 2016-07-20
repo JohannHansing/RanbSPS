@@ -5,9 +5,7 @@ using namespace std;
 
 CRod::CRod(){
     axis = -1;
-    coord[0] = 0;
-    coord[1] =  0;
-    coord[2] =  0;
+    coord = Eigen::Vector3d::Zero();
 }
 
 CRod::CRod(int ax, double xi, double xj, bool ranU, boost::mt19937 *igen){
@@ -16,9 +14,9 @@ CRod::CRod(int ax, double xi, double xj, bool ranU, boost::mt19937 *igen){
     if (i==3) i=0;
     j=3-(i+ax);
     axis = ax;
-    coord[axis] = 0.;
-    coord[i] = xi;
-    coord[j] = xj;
+    coord(axis) = 0.;
+    coord(i) = xi;
+    coord(j) = xj;
     if (ranU){
         _igen = igen;
         signs[0]=ran_sign();

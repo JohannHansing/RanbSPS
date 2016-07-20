@@ -12,7 +12,9 @@
 #include <vector>
 #include <array>
 #include <string>
+#include <Eigen/Dense>
 #include "boost/random.hpp"
+
 
 using namespace std;
 
@@ -23,7 +25,7 @@ private:
 
 public:
     int axis; // rod parallel to axis 0 = x, axis 1 = y, etc.
-    double coord[3]; // Coordinate of rod in 2D plane orthogonal to axis. the coord parallel to axis is always 0. (see initiaion)
+    Eigen::Vector3d coord; // Coordinate of rod in 2D plane orthogonal to axis. the coord parallel to axis is always 0. (see initiaion)
     array <int,3> signs; //this array stores the signs of the charge along the polymer backbone
     array <bool,2> samesign;
     boost::mt19937 *_igen;
