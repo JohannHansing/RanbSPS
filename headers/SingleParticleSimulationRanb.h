@@ -58,7 +58,7 @@ string createDataFolder(string distribution, double timestep, double simtime, do
 
 
 void settingsFile(string folder, bool ranRod, double particlesize, double timestep, double runs, double steps, double potStrength, double potRange,
-        bool rand, bool recordMFP, bool steric, bool ranU, string distribution, double dvar, double polydiam, string tmp5){
+        bool rand, bool recordPosHisto, bool steric, bool ranU, string distribution, double dvar, double polydiam, string tmp5){
     //Creates a file where the simulation settings are stored
     //MAYBE ALSO INCLUDE TIME AND DATE!!
     ofstream settingsfile;
@@ -66,7 +66,7 @@ void settingsFile(string folder, bool ranRod, double particlesize, double timest
     settingsfile << "Sim dir: " << folder << endl;
     settingsfile << "Pore Distribution " << distribution << endl;
     settingsfile << "ranRod " << ranRod << endl;
-    settingsfile << "TMP " << recordMFP << endl;//" (Bessel)" << endl;  //TODO Bessel!
+    settingsfile << "TMP " << recordPosHisto << endl;//" (Bessel)" << endl;  //TODO Bessel!
     settingsfile << "rand " << rand << endl;
     settingsfile << "includesteric " << steric << endl;
     settingsfile << "ranU " << ranU  << endl;

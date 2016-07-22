@@ -9,7 +9,7 @@ CConfiguration::CConfiguration(){
 }
 
 CConfiguration::CConfiguration(
-        string distribution, double timestep,  double potRange,  double potStrength, const bool rand,
+        bool fixRods, string distribution, double timestep,  double potRange,  double potStrength, const bool rand,
         double psize, const bool posHisto, const bool steric, const bool ranU, bool ranRod, double dvar, double polydiam, string peptide){
     setRanNumberGen(0);
     _potRange = potRange;
@@ -25,6 +25,7 @@ CConfiguration::CConfiguration(
     _LJPot = (steric == false) && (psize != 0);
     _ranU = ranU;
     _rand = rand;
+    _fixRods = fixRods;
     _dvar = dvar;
     _upot = 0;
     _mu_sto = sqrt( 2 * _timestep );                 //timestep for stochastic force
@@ -100,21 +101,26 @@ void CConfiguration::makeStep(){
 
 
 
-void CConfiguration::checkBoxCrossing(){
+bool CConfiguration::checkBoxCrossing(){
     //should the particle cross the confinement of the cube, let it appear on the opposite side of the box
+    bool crossing = false;
     int exitmarker = 0;
     for (int i = 0; i < 3; i++){
         exitmarker =0;
-        if (_ppos(i) < -0.05*_b_array[i][0]){//Only create new rod config if the particle has crossed the border by a certain fraction
+        double boundary = -0.05*_b_array[i][0];
+        if (_fixRods) boundary = -10;
+        if (_ppos(i) < boundary){//Only create new rod config if the particle has crossed the border by a certain fraction
             _ppos(i) += _b_array[i][0];
             _boxCoord[i] -= _b_array[i][0];
             exitmarker = -1;
         }
-        else if (_ppos(i) > 1.05*_b_array[i][2]){//Only create new rod config if the particle has crossed the border by a certain fraction
+        boundary=1.05*_b_array[i][2];
+        if (_fixRods) boundary = 20;
+        else if (_ppos(i) > boundary){//Only create new rod config if the particle has crossed the border by a certain fraction
             _ppos(i) -= _boxsize[i];
             _boxCoord[i] += _boxsize[i];
             exitmarker = 1;
-            if (_ppos(i) > 10){
+            if (_ppos(i) > 20){
                 cout << "Bad _ppos after boxcrossing. Aborting!" << endl;
                 cout << "_ppos b4 " << _ppos(i) + _boxsize[i] << endl;
                 cout << "_ppos after " << _ppos(i) << endl;
@@ -123,13 +129,10 @@ void CConfiguration::checkBoxCrossing(){
             }
         }
         if (exitmarker!=0){
+            crossing = true;
             updateRanb(i,exitmarker);
-            if (_rand){
+            if (_rand && !_fixRods){
                 updateRand(i,exitmarker);
-                ifdebug(
-                    cout << "[["<<i<<"," << exitmarker <<"] ";
-                    prinRodPos(0); // cout print rod pos!
-                )
             }
             if (_ranRod){
                 //TODO rel
@@ -145,11 +148,7 @@ void CConfiguration::checkBoxCrossing(){
             }
         }
     }
-    //TODO del
-    if (!tracerInBox()){
-        cout << "\nTRACER NOT IN BOX!!!" << endl;
-        abort();
-    }
+    return crossing;
 }
 
 
@@ -209,14 +208,28 @@ void CConfiguration::calcMobilityForces(){
             }
         }
         else if (_rand){
-            for (int abcd=0;abcd<4;abcd++){
-                for (int efgh=0;efgh<4;efgh++){
-                    r_i = _ppos(i) - _drods[plane][abcd][efgh].coord(i);
-                    r_k = _ppos(k) - _drods[plane][abcd][efgh].coord(k);
-                    ri_arr[cnt]=(r_i);
-                    rk_arr[cnt]=(r_k);
-                    rSq_arr[cnt]=( r_i * r_i + r_k * r_k);
-                    cnt++;
+            if (_fixRods){
+                for (int abcd=0;abcd<4;abcd++){
+                    for (int efgh=0;efgh<4;efgh++){
+                        r_i = minImage(_ppos(i) - _drods[plane][abcd][efgh].coord(i));
+                        r_k = minImage(_ppos(k) - _drods[plane][abcd][efgh].coord(k));
+                        ri_arr[cnt]=(r_i);
+                        rk_arr[cnt]=(r_k);
+                        rSq_arr[cnt]=( r_i * r_i + r_k * r_k);
+                        cnt++;
+                    }
+                }
+            }
+            else{
+                for (int abcd=0;abcd<4;abcd++){
+                    for (int efgh=0;efgh<4;efgh++){
+                        r_i = _ppos(i) - _drods[plane][abcd][efgh].coord(i);
+                        r_k = _ppos(k) - _drods[plane][abcd][efgh].coord(k);
+                        ri_arr[cnt]=(r_i);
+                        rk_arr[cnt]=(r_k);
+                        rSq_arr[cnt]=( r_i * r_i + r_k * r_k);
+                        cnt++;
+                    }
                 }
             }
         }
@@ -303,7 +316,7 @@ void CConfiguration::saveXYZTraj(string name, int move, string flag) {
     fprintf(m_traj_file, "%d\n%s (%8.3f %8.3f %8.3f) t=%u \n", 1, "sim_name", _boxsize[0], _boxsize[1], _boxsize[2], move);
 
 
-    rtmp = _ppos;//+boxCoordinates;
+    rtmp = _ppos+boxCoordinates;
     fprintf(m_traj_file, "%3s%9.3f%9.3f%9.3f \n","H", rtmp(0), rtmp(1),  rtmp(2));
 
 
@@ -313,9 +326,6 @@ void CConfiguration::saveXYZTraj(string name, int move, string flag) {
         if(m_traj_file!=NULL) { fclose(m_traj_file); }
     }
 }
-
-
-
 
 
 

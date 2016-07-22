@@ -13,8 +13,8 @@ int main(int argc, const char* argv[]){
     //TRIGGERS:
     string distribution = argv[1];    // TODO
     bool ranRod = (strcmp(argv[2] , "true") == 0 ) ;
-    bool rand = (strcmp(argv[3] , "true") == 0 ) ;       //BESSEL TODO
-    bool recordMFP = (strcmp(argv[4] , "true") == 0 ) ;
+    bool rand = (strcmp(argv[3] , "true") == 0 ) ; 
+    bool writeRods = (strcmp(argv[4] , "true") == 0 ) ;  // TODO CHANGE THIS TO PBC or something
     bool recordPosHisto = (strcmp(argv[5] , "true") == 0 ) ;
     bool includeSteric = (strcmp(argv[6] , "true") == 0 ) ;  // steric 2
     bool ranU = (strcmp(argv[7] , "true") == 0 ) ;
@@ -80,9 +80,10 @@ int main(int argc, const char* argv[]){
     ifdebug(cout << "created CAverage files. ";)
 
     //initialize instance of configuration
-    CConfiguration conf = CConfiguration(distribution,timestep, urange, ustrength, rand, particlesize, recordPosHisto, 
+    CConfiguration conf = CConfiguration(writeRods, distribution,timestep, urange, ustrength, rand, particlesize, recordPosHisto, 
                             includeSteric, ranU, ranRod, dvar,polydiam, tmp5);
     ifdebug(cout << "created CConf conf. ";)
+
 
 
     unsigned int stepcount = 0;
@@ -93,12 +94,23 @@ int main(int argc, const char* argv[]){
     // TODO distancefile
     distancesfile.open((folder + "/Coordinates/squareDistances.txt").c_str());
     
-    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordMFP, includeSteric, ranU, distribution, 
+    settingsFile(folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordPosHisto, includeSteric, ranU, distribution, 
                     dvar, polydiam, tmp5);
                     
     //create .xyz file to save the trajectory for VMD
     string traj_file = folder + "/Coordinates/single_traj.xyz";
     conf.saveXYZTraj(traj_file,0,"w");
+    
+    // write rod positions of rods are fixed throughout the simulation
+    ofstream rodPosFile;
+    FILE*  snapFile;
+    if (writeRods){
+        rodPosFile.open((folder + "/Coordinates/rodposfile.txt").c_str());
+        rodPosFile << "set rad 0.1\nmol new" << endl;
+        conf.writeRodForVMD(rodPosFile);
+        snapFile = fopen((folder + "/Coordinates/snapFile.xyz").c_str(), "w");
+        fprintf(snapFile, "%s\n%s (%8.3f %8.3f %8.3f) t=%u \n", "XXX", "sim_name", 10., 10., 10., 0);
+    }
     
 
 
@@ -143,7 +155,12 @@ int main(int argc, const char* argv[]){
                 conf.calcStochasticForces();
                 conf.makeStep();
             }
-            conf.checkBoxCrossing(); //check if particle has crossed the confinement of the box
+            if (conf.checkBoxCrossing()){//check if particle has crossed the confinement of the box
+                // if (writeRods){
+//                     rodPosFile << "#" << endl;
+//                     conf.writeRodForVMD(rodPosFile);
+//                 }
+            }
 
             stepcount++;
             if (stepcount%trajout == 0) {
@@ -154,11 +171,20 @@ int main(int argc, const char* argv[]){
                 if (stepcount%(100*trajout) == 0) conf.writeDistances( distancesfile, stepcount);
             }
             
+            
+            
             if (((i+1)%100 == 0) && (l == 0)){       //Save the first trajectory to file
                 conf.saveXYZTraj(traj_file, i, "a");                    // TODO change back ((i+1)%XXX == 0) to 100
+
+                if (((i+1)%100000 == 0) && writeRods){
+                    std::vector<double> ppos = conf.getppos_rel();
+                    fprintf(snapFile, "%3s%9.3f%9.3f%9.3f \n","H", ppos[0], ppos[1],  ppos[2]);
+                }
             }
         }
-        if (l==0) conf.saveXYZTraj(traj_file, steps, "c"); // Close XYZ traj_file
+        if (l==0){
+            conf.saveXYZTraj(traj_file, steps, "c"); // Close XYZ traj_file
+        }
         
         if (l%100 == 0){
             cout << "run " << l << endl;
@@ -182,7 +208,9 @@ int main(int argc, const char* argv[]){
 
     cout << "Simulation Finished" << endl;
 
+    fclose(snapFile);
     trajectoryfile.close();
+    rodPosFile.close();
     // TODO distancefile
     distancesfile.close();
 
