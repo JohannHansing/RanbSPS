@@ -36,7 +36,8 @@ private:
     double _pradius;     //particle size is most relevant for scaling! (default = 1)
     double _boxsize[3];          // ALWAYS define boxsize through particlesize due to scaling!
     double _bdef = 10;     //default boxsize
-    double _b_pbc = 30; // boxsize for periodic boundary cond.
+    double _b_pbc = 40; // boxsize for periodic boundary cond.
+    double _b_pbcInv2 = 2./_b_pbc;
     std::array<std::array<double,3>,3> _b_array;
     std::array<std::array<double,3>,3> _b_array_prev;
     double _epsilon;
@@ -59,7 +60,7 @@ private:
     bool _ranRod;
     bool _fixb;
     bool _rand;
-    bool _fixRods;
+    bool _setPBC;
 
     //COUNTERS AND INIT VALUES
     double _boxCoord[3];
@@ -168,8 +169,8 @@ private:
     }
 
     void updateRanb(int axis, int exitmarker){
-        _b_array_prev = _b_array;
         if (_fixb) {return;}
+        _b_array_prev = _b_array;
         // ROTATE http://en.cppreference.com/w/cpp/algorithm/rotate
         //copy neighbor boxsize to _boxsize for particle box.
         ifdebug(cout << "Update Ranb\naxis " << axis << "  --  exitmarker " << exitmarker << endl;)
@@ -576,7 +577,7 @@ private:
 public:
     CConfiguration();
     CConfiguration(
-        bool fixRods, string distribution,double timestep,  double potRange,  double potStrength, const bool rand,
+        bool setPBC, string distribution,double timestep,  double potRange,  double potStrength, const bool rand,
         double psize, const bool fixRodPos, const bool steric, const bool ranU, bool ranRod, double dvar, double polydiam, string tmp5);
     void updateStartpos();
     void makeStep();
@@ -638,16 +639,44 @@ public:
                 }
             }
         }
+        // This part adds the first periodically repeated rods, too
+        file << "####################\n####### PBC PART ! ##\n####################" << endl;
+        for (int nx=-1;nx<2;nx++){
+            for (int ny=-1;ny<2;ny++){
+                for (int nz=-1;nz<2;nz++){
+                    Eigen::Vector3d nvec;
+                    nvec << nx, ny, nz;
+                    if (nvec==Eigen::Vector3d::Zero()) continue;
+                    for (int axis=0;axis<3;axis++){
+                        for (int abc=0;abc<_drods[axis].size();abc++){
+                            for (int def=0;def<_drods[axis].size();def++){
+                                Eigen::Vector3d rodStart = _drods[axis][abc][def].coord + box + _b_pbc*nvec;
+                                rodStart(axis) += -20; //For the VMD script the cylinder starts at -10 ...
+                                Eigen::Vector3d rodEnd = _drods[axis][abc][def].coord + box + _b_pbc*nvec;
+                                rodEnd(axis) += 30; // ... and ends at +20
+                                file << "graphics top cylinder {" 
+                                    << rodStart(0) << " " << rodStart(1) << " " << rodStart(2) 
+                                        << "} {"
+                                            << rodEnd(0) << " " << rodEnd(1) << " " << rodEnd(2)
+                                                << "} radius $rad resolution 1000 filled yes" << endl;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     
-    double minImage(double ri){
+    double minImage(double ri){// TODO USE THE SLOWER STANDARD ONE FROM WIKIPEDIA HERE (IT'S SHOWN IN THE FLEXIBLE SIM)
         // returns disctance vector with minimal image convention.
+        //cout << "**************\nri b4 minimage: " << ri << endl;
         int abc;
-        abc= ri/_b_pbc;
+        abc= ri*_b_pbcInv2;//this is equivalent to dividing by half the boxsize!
         ri -= abc * _b_pbc;
-        abc= ri/_b_pbc;
+        abc= ri*_b_pbcInv2;
         ri -= abc * _b_pbc;
-        if (abs(ri)>30) cout << ri << endl;
+        //if (abs(ri)>30.) cout << ri << endl;
+        //cout << "ri after minimage: " << ri << endl;
         return ri;
     }
 

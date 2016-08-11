@@ -9,7 +9,7 @@ CConfiguration::CConfiguration(){
 }
 
 CConfiguration::CConfiguration(
-        bool fixRods, string distribution, double timestep,  double potRange,  double potStrength, const bool rand,
+        bool setPBC, string distribution, double timestep,  double potRange,  double potStrength, const bool rand,
         double psize, const bool posHisto, const bool steric, const bool ranU, bool ranRod, double dvar, double polydiam, string peptide){
     setRanNumberGen(0);
     _potRange = potRange;
@@ -25,7 +25,7 @@ CConfiguration::CConfiguration(
     _LJPot = (steric == false) && (psize != 0);
     _ranU = ranU;
     _rand = rand;
-    _fixRods = fixRods;
+    _setPBC = setPBC;
     _dvar = dvar;
     _upot = 0;
     _mu_sto = sqrt( 2 * _timestep );                 //timestep for stochastic force
@@ -107,20 +107,26 @@ bool CConfiguration::checkBoxCrossing(){
     int exitmarker = 0;
     for (int i = 0; i < 3; i++){
         exitmarker =0;
-        double boundary = -0.05*_b_array[i][0];
-        if (_fixRods) boundary = -10;
-        if (_ppos(i) < boundary){//Only create new rod config if the particle has crossed the border by a certain fraction
-            _ppos(i) += _b_array[i][0];
-            _boxCoord[i] -= _b_array[i][0];
+        double lbound = -0.05*_b_array[i][0];
+        double rbound =_b_array[i][1] + 0.05*_b_array[i][2];
+        double lshift = _b_array[i][0];
+        double rshift = _boxsize[i];
+        if (_setPBC){
+            lbound = -10;
+            lshift=_b_pbc;
+            rbound = 30;
+            rshift=_b_pbc;
+        }
+        if (_ppos(i) < lbound){//Only create new rod config if the particle has crossed the border by a certain fraction
+            _ppos(i) += lshift;
+            _boxCoord[i] -= lshift;
             exitmarker = -1;
         }
-        boundary=1.05*_b_array[i][2];
-        if (_fixRods) boundary = 20;
-        else if (_ppos(i) > boundary){//Only create new rod config if the particle has crossed the border by a certain fraction
-            _ppos(i) -= _boxsize[i];
-            _boxCoord[i] += _boxsize[i];
+        else if (_ppos(i) > rbound){//Only create new rod config if the particle has crossed the border by a certain fraction
+            _ppos(i) -= rshift;
+            _boxCoord[i] += rshift;
             exitmarker = 1;
-            if (_ppos(i) > 20){
+            if (_ppos(i) > 31){
                 cout << "Bad _ppos after boxcrossing. Aborting!" << endl;
                 cout << "_ppos b4 " << _ppos(i) + _boxsize[i] << endl;
                 cout << "_ppos after " << _ppos(i) << endl;
@@ -131,7 +137,7 @@ bool CConfiguration::checkBoxCrossing(){
         if (exitmarker!=0){
             crossing = true;
             updateRanb(i,exitmarker);
-            if (_rand && !_fixRods){
+            if (_rand && !_setPBC){
                 updateRand(i,exitmarker);
             }
             if (_ranRod){
@@ -146,6 +152,7 @@ bool CConfiguration::checkBoxCrossing(){
                     }
                 }
             }
+            ifdebug(prinRodPos(i);)
         }
     }
     return crossing;
@@ -208,7 +215,7 @@ void CConfiguration::calcMobilityForces(){
             }
         }
         else if (_rand){
-            if (_fixRods){
+            if (_setPBC){
                 for (int abcd=0;abcd<4;abcd++){
                     for (int efgh=0;efgh<4;efgh++){
                         r_i = minImage(_ppos(i) - _drods[plane][abcd][efgh].coord(i));
@@ -253,7 +260,7 @@ void CConfiguration::calcMobilityForces(){
             }
         }
     
-        //TODO distarr[i] = rSq_arr; //store distances for writing them to a file later
+        _distarr[i] = rSq_arr; //store distances for writing them to a file later
         for (int j=0;j<cnt;j++){
             const double rSq = rSq_arr.at(j);
             calculateExpPotential(rSq, utmp, frtmp);
