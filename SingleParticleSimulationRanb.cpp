@@ -189,6 +189,7 @@ int main(int argc, const char* argv[]){
         
         if (l%100 == 0){
             cout << "run " << l << endl;
+            fflush(snapFile); // flush the snapFile data to file
             if (l==1000) energyU.saveAverageInstantValues(saveInt*timestep);
         }
 
