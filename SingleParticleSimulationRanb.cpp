@@ -187,7 +187,7 @@ int main(int argc, const char* argv[]){
             //conf.saveXYZTraj(traj_file, steps, "c"); // Close XYZ traj_file
         }
         
-        if (l%100 == 0){
+        if (l%50 == 0){
             cout << "run " << l << endl;
             fflush(snapFile); // flush the snapFile data to file
             energyU.saveAverageInstantValues(saveInt*timestep);
