@@ -168,7 +168,7 @@ int main(int argc, const char* argv[]){
                 trajectoryfile << fixed << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;
                 ifdebug(cout << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;)
                 //TODO pass distancefile to function in conf.
-                if (stepcount%(5*trajout) == 0){
+                if (stepcount%(10*trajout) == 0){
                     conf.writeDistances( distancesfile, stepcount);
                 }
                 if (setPBC && (stepcount%(10*trajout) == 0)){ //should be 10
