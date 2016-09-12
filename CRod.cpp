@@ -22,6 +22,7 @@ CRod::CRod(int ax, double xi, double xj, bool ranU, boost::mt19937 *igen){
         signs[0]=ran_sign();
         signs[1]=ran_sign();
         signs[2]=ran_sign();
+        signs[3]=ran_sign();
         checksamesign();
     }
 }

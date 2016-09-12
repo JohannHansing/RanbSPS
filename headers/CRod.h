@@ -26,7 +26,7 @@ private:
 public:
     int axis; // rod parallel to axis 0 = x, axis 1 = y, etc.
     Eigen::Vector3d coord; // Coordinate of rod in 2D plane orthogonal to axis. the coord parallel to axis is always 0. (see initiaion)
-    array <int,3> signs; //this array stores the signs of the charge along the polymer backbone
+    array <int,4> signs; //this array stores the signs of the charge along the polymer backbone (4 signs, for pbc similations)
     array <bool,2> samesign;
     boost::mt19937 *_igen;
     
@@ -49,6 +49,7 @@ public:
     
     
     void checksamesign(){
+        // NOTE: Samesign check is not implemented for pbc!
         samesign[0] = (signs[1]==signs[0] );
         samesign[1] = (signs[1]==signs[2] );
     }

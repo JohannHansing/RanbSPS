@@ -145,7 +145,7 @@ bool CConfiguration::checkBoxCrossing(){
                 updateRodsArr(i, exitmarker);
                 //updateRodsRel(i, exitmarker);
             }
-            if (_ranU){
+            if (_ranU && !_setPBC){
                 for (auto & vrods : _drods[i]){
                     for (auto & rod :  vrods){
                         rod.shiftSigns(exitmarker);
@@ -267,22 +267,28 @@ void CConfiguration::calcMobilityForces(){
 
         
             if (_ranU){
-                int abcd = j/4; // This could be made more efficient by replacing the j loop with two loops abcd efgh and a counter j
+                int abcd = j/4;
                 int efgh = j%4;
                 int sign = _drods[plane][abcd][efgh].signs[1];
-                //cout << "abcd " << abcd << "efgh " << efgh << " sign: " << sign << endl;
+                if (_setPBC){
+                    // NOTE: Samesign check is not implemented for pbc!
+                    int izpos=(int)((_ppos(plane)+10)/10.); //this is between 0 and 3
+                    sign = _drods[plane][abcd][efgh].signs[izpos];
+                }
                 utmp *= sign;
                 frtmp *= sign;
-                if (_ppos(plane) > z2){
-                    if (! _drods[plane][abcd][efgh].samesign[1]){
-                        _f_mob(plane) += utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
-                        modifyPot(utmp, frtmp, (_boxsize[plane] - _ppos(plane)) * z1inv);
+                if (!_setPBC){
+                    if (_ppos(plane) > z2){
+                        if (! _drods[plane][abcd][efgh].samesign[1]){
+                            _f_mob(plane) += utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
+                            modifyPot(utmp, frtmp, (_boxsize[plane] - _ppos(plane)) * z1inv);
+                        }
                     }
-                }
-                else if (_ppos(plane) < z1){
-                    if (! _drods[plane][abcd][efgh].samesign[0]){
-                        _f_mob(plane) -= utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
-                        modifyPot(utmp, frtmp, _ppos(plane) * z1inv);
+                    else if (_ppos(plane) < z1){
+                        if (! _drods[plane][abcd][efgh].samesign[0]){
+                            _f_mob(plane) -= utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
+                            modifyPot(utmp, frtmp, _ppos(plane) * z1inv);
+                        }
                     }
                 }
             }

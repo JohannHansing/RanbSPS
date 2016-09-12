@@ -667,6 +667,63 @@ public:
         }
     }
     
+    void writeRodForVMDranU(ofstream & file){
+        Eigen::Map<Eigen::Vector3d> box(_boxCoord);
+        for (int axis=0;axis<3;axis++){
+            for (int abc=0;abc<_drods[axis].size();abc++){
+                for (int def=0;def<_drods[axis].size();def++){
+                    Eigen::Vector3d rodStart = _drods[axis][abc][def].coord + box;
+                    Eigen::Vector3d rodEnd = rodStart;
+                    rodStart(axis) += -10; //For the VMD script the cylinder starts at -10 ...
+                    rodEnd(axis) = rodStart(axis) + 10;
+                    for (int n=0;n<4;n++){
+                        if (_drods[axis][abc][def].signs[n]==-1) file << "mol new; graphics top color blue; ";
+                        else file << "mol new; graphics top color red; ";
+                        file << "graphics top cylinder {" 
+                            << rodStart(0) << " " << rodStart(1) << " " << rodStart(2) 
+                                << "} {"
+                                    << rodEnd(0) << " " << rodEnd(1) << " " << rodEnd(2)
+                                        << "} radius $rad resolution 1000 filled yes" << endl;
+                        rodStart(axis) += 10;
+                        rodEnd(axis)   += 10;
+                    }
+                }
+            }
+        }
+        // This part adds the first periodically repeated rods, too
+        file << "####################\n####### PBC PART ! ##\n####################" << endl;
+        for (int nx=-1;nx<2;nx++){
+            for (int ny=-1;ny<2;ny++){
+                for (int nz=-1;nz<2;nz++){
+                    Eigen::Vector3d nvec;
+                    nvec << nx, ny, nz;
+                    if (nvec==Eigen::Vector3d::Zero()) continue;
+                    for (int axis=0;axis<3;axis++){
+                        for (int abc=0;abc<_drods[axis].size();abc++){
+                            for (int def=0;def<_drods[axis].size();def++){
+                                Eigen::Vector3d rodStart = _drods[axis][abc][def].coord + box + _b_pbc*nvec;
+                                Eigen::Vector3d rodEnd = rodStart;
+                                rodStart(axis) += -10; //For the VMD script the cylinder starts at -10 ...
+                                rodEnd(axis) = rodStart(axis) + 10;
+                                for (int n=0;n<4;n++){
+                                    if (_drods[axis][abc][def].signs[n]==-1) file << "mol new; graphics top color blue; ";
+                                    else file << "mol new; graphics top color red; ";
+                                    file << "graphics top cylinder {" 
+                                        << rodStart(0) << " " << rodStart(1) << " " << rodStart(2) 
+                                            << "} {"
+                                                << rodEnd(0) << " " << rodEnd(1) << " " << rodEnd(2)
+                                                    << "} radius $rad resolution 1000 filled yes" << endl;
+                                    rodStart(axis) += 10;
+                                    rodEnd(axis)   += 10;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     double minImage(double ri){// TODO USE THE SLOWER STANDARD ONE FROM WIKIPEDIA HERE (IT'S SHOWN IN THE FLEXIBLE SIM)
         // returns disctance vector with minimal image convention.
         //cout << "**************\nri b4 minimage: " << ri << endl;

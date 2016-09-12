@@ -12,12 +12,12 @@ int main(int argc, const char* argv[]){
 
     //TRIGGERS:
     string distribution = argv[1];    // TODO
-    bool ranRod = (strcmp(argv[2] , "true") == 0 ) ;
-    bool rand = (strcmp(argv[3] , "true") == 0 ) ; 
-    bool setPBC = (strcmp(argv[4] , "true") == 0 ) ;  // TODO CHANGE THIS TO PBC or something
-    bool recordPosHisto = (strcmp(argv[5] , "true") == 0 ) ;
-    bool includeSteric = (strcmp(argv[6] , "true") == 0 ) ;  // steric 2
-    bool ranU = (strcmp(argv[7] , "true") == 0 ) ;
+    bool ranRod = (strcmp(argv[2] , "-X-") == 0 ) ;
+    bool rand = (strcmp(argv[3] , "-X-") == 0 ) ; 
+    bool setPBC = (strcmp(argv[4] , "-X-") == 0 ) ;  // TODO CHANGE THIS TO PBC or something
+    bool recordPosHisto = (strcmp(argv[5] , "-X-") == 0 ) ;
+    bool includeSteric = (strcmp(argv[6] , "-X-") == 0 ) ;  // steric 2
+    bool ranU = (strcmp(argv[7] , "-X-") == 0 ) ;
     string tmp5 = argv[8];
     int boolpar = 8;
     ifdebug(cout << "copied bools. ";)
@@ -25,8 +25,8 @@ int main(int argc, const char* argv[]){
     // Checking for correct structure of input arguments
     for (int k= 1; k < argc; k++ ) cout << "parameter " << k << " " << argv[k] << endl;
     for (int b_i=2; b_i<boolpar; b_i++){
-        if (!((strcmp(argv[b_i] , "true") == 0 )  || (strcmp(argv[b_i] , "false") == 0 ))){
-            cerr << "Error; Bool parameter " << b_i << " is not either 'true' or 'false'!" << endl;
+        if (!((strcmp(argv[b_i] , "-X-") == 0 )  || (strcmp(argv[b_i] , "---") == 0 ))){
+            cerr << "Error; Bool parameter " << b_i << " is not either '-X-' or '---'!" << endl;
             exit(1);
         }
     }
@@ -106,8 +106,9 @@ int main(int argc, const char* argv[]){
     FILE*  snapFile;
     if (setPBC){
         rodPosFile.open((folder + "/Coordinates/rodposfile.txt").c_str());
-        rodPosFile << "set rad 0.1\nmol new" << endl;
-        conf.writeRodForVMD(rodPosFile);
+        rodPosFile << "set rad 0.15\nmol new" << endl;
+        if (ranU) conf.writeRodForVMDranU(rodPosFile);
+        else conf.writeRodForVMD(rodPosFile);
         snapFile = fopen((folder + "/Coordinates/snapFile.xyz").c_str(), "w");
         fprintf(snapFile, "%s\n%s (%8.3f %8.3f %8.3f) t=%u \n", "XXX", "sim_name", 10., 10., 10., 0);
     }
