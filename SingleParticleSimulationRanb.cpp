@@ -86,7 +86,7 @@ int main(int argc, const char* argv[]){
 
 
 
-    unsigned int stepcount = 0;
+    unsigned long long stepcount = 0;
     ofstream trajectoryfile;
     trajectoryfile.open((folder + "/Coordinates/trajectory.txt").c_str());
     
