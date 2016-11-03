@@ -37,7 +37,7 @@ string createDataFolder(paramstruct ps){
     //In the definition of folder, the addition has to START WITH A STRING! for the compiler to know what to do (left to right).
     string folder = "sim_data";
     if (ps.setPBC) folder += "/setPBC";
-    if (ps.Pointq) folder += "/pointq";
+    if (ps.Pointq) folder += "/pointq/drqop"+ toString(ps.drqop);
     if (ps.ranU) folder = folder + "/ranU";
     if (ps.ranRod) folder += "/ranRod";
     if (ps.rand) folder += "/rand/d" + toString(ps.dvar);
@@ -75,6 +75,7 @@ void settingsFile(string folder, paramstruct ps){
     settingsfile << "k " << ps.urange << endl << "U_0 " << ps.ustrength << endl;
     settingsfile << "dvar " << ps.dvar << endl;
     settingsfile << "a " << ps.polydiam << endl;
+    settingsfile << "drqop " << ps.drqop << endl;
 
     settingsfile.close();
 }

@@ -44,6 +44,7 @@ int main(int argc, const char* argv[]){
     ps.ustrength = atof( argv[boolpar+6] );
     ps.dvar = atof( argv[boolpar+7] );
     ps.polydiam = atof( argv[boolpar+8] );
+    ps.drqop = atof( argv[boolpar+9] );
 
     // main loop parameters
     unsigned int saveInt= ps.steps/ps.instantvalues;

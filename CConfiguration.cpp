@@ -24,7 +24,7 @@ CConfiguration::CConfiguration( paramstruct ps ){
     _ranU = ps.ranU;
     _rand = ps.rand;
     _Pointq = ps.Pointq;
-    _dr_q = 1.33 * ps.particlesize; // 1.33 for alexa488 in dextran(-)
+    _dr_q = ps.drqop * ps.particlesize; // 1.33 for alexa488 in dextran(-)
     _setPBC = ps.setPBC;
     _dvar = ps.dvar;
     _upot = 0;

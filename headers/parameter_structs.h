@@ -32,6 +32,7 @@ struct paramstruct {
     double ustrength;
     double dvar;
     double polydiam;
+    double drqop;
 };
 
 
