@@ -16,6 +16,7 @@
 #include <boost/random/gamma_distribution.hpp>
 #include <Eigen/Dense>
 #include "CRod.h"
+#include "parameter_structs.h"
 
 
 #define ifdebug(x) 
@@ -61,6 +62,7 @@ private:
     bool _fixb;
     bool _rand;
     bool _setPBC;
+    bool _Pointq;
 
     //COUNTERS AND INIT VALUES
     double _boxCoord[3];
@@ -84,6 +86,8 @@ private:
     double _polyrad;
     double _polydiamSq;
     
+    // Point Charge Stuff
+    double _dr_q;
     
     
     //---------------------------- POTENTIALS ------------------------------
@@ -351,7 +355,7 @@ private:
                         overlaps= testTracerOverlap(i, j, xipos, xjpos);
                         //cout << "Repeat?";
                     }
-                    CRod newRod = CRod(axis, xipos, xjpos, _ranU, m_igen );
+                    CRod newRod = CRod(axis, xipos, xjpos, _ranU, m_igen, _Pointq, _dr_q );
                     _drods[axis][abcd][efgh] = newRod;
                 }
             }
@@ -387,6 +391,7 @@ private:
                 //Example: -_b_array[j][0] , 0
                    //      0 , _b_array[j][1]
                    //      _b_array[j][1], _b_array[j][1]+ _b_array[j][2]
+                _drods[i][abcd][3] = CRod(i, 0., 0., _ranU, m_igen, _Pointq, _dr_q ); // make a new rod with same axis
                 overlaps=true;
                 while (overlaps){
                     _drods[i][abcd][3].coord[crossaxis] = 2*_bdef + ran_norm();
@@ -396,6 +401,7 @@ private:
                         || testRodOverlap(i, crossaxis, j, _drods[i][abcd][3].coord[crossaxis], _drods[i][abcd][3].coord[j]);
                     //cout << "Repeat?";
                 }
+                _drods[j][3][abcd] = CRod(j, 0., 0., _ranU, m_igen, _Pointq, _dr_q ); // make a new rod with same axis
                 overlaps=true;
                 while (overlaps){
                     _drods[j][3][abcd].coord[crossaxis] = 2*_bdef + ran_norm();
@@ -421,6 +427,7 @@ private:
             cellInterval_aj = - _bdef;
             for (int abcd=0;abcd<4;abcd++){
                 rotate_right(_drods[i][abcd]);
+                _drods[i][abcd][0] = CRod(i, 0., 0., _ranU, m_igen, _Pointq, _dr_q ); // make a new rod with same axis
                 // new rod positions
                 overlaps=true;
                 while (overlaps){
@@ -430,6 +437,7 @@ private:
                         //TODO overlap
                         || testRodOverlap(i, crossaxis, j, _drods[i][abcd][0].coord[crossaxis], _drods[i][abcd][0].coord[j]);
                 }
+                _drods[j][0][abcd] = CRod(j, 0., 0., _ranU, m_igen, _Pointq, _dr_q ); // make a new rod with same axis
                 overlaps=true;
                 while (overlaps){
                     _drods[j][0][abcd].coord[crossaxis] = -_bdef + ran_norm();
@@ -565,6 +573,7 @@ private:
     void countWallCrossing(int crossaxis, int exitmarker);
     void calculateExpHPI(const double r, double& U, double& Fr);
     void calculateExpPotential(const double r, double& U, double& Fr);
+    double calcDebyePot(double rSq, double& U);
     void calculateExpPotentialMOD(const double r, double& U, double& Fr, int index);
     void modifyPot(double& U, double& Fr, double dist);
     void calcLJPot(const double r, double &U, double &dU);
@@ -576,9 +585,7 @@ private:
 
 public:
     CConfiguration();
-    CConfiguration(
-        bool setPBC, string distribution,double timestep,  double potRange,  double potStrength, const bool rand,
-        double psize, const bool fixRodPos, const bool steric, const bool ranU, bool ranRod, double dvar, double polydiam, string tmp5);
+    CConfiguration(  paramstruct ps );
     void updateStartpos();
     void makeStep();
     bool checkBoxCrossing();

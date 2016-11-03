@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <vector>
+#include <math.h>
 #include <array>
 #include <string>
 #include <Eigen/Dense>
@@ -30,8 +31,11 @@ public:
     array <bool,2> samesign;
     boost::mt19937 *_igen;
     
+    // offset for "lowest" point charge
+    double dz0_q = 0;
+    
     CRod();
-    CRod(int ax, double xi, double xj, bool ranU, boost::mt19937 *igen);
+    CRod(int ax, double xi, double xj, bool ranU, boost::mt19937 *igen, bool Pointq=false, double dr_q=0.);
     void shiftSigns(int exitmarker){
         // When the particle leaves the central cell and the system is shifted, the signs along the polymer need to be shifted, too.
         if (exitmarker==1){
@@ -39,7 +43,7 @@ public:
             signs[1]=signs[2];
             signs[2]=ran_sign();
         }
-        if (exitmarker==-1){
+        else{
             signs[2]=signs[1];
             signs[1]=signs[0];
             signs[0]=ran_sign();
@@ -50,15 +54,30 @@ public:
     
     void checksamesign(){
         // NOTE: Samesign check is not implemented for pbc!
-        samesign[0] = (signs[1]==signs[0] );
-        samesign[1] = (signs[1]==signs[2] );
+        samesign[0] = ( signs[1]==signs[0] );
+        samesign[1] = ( signs[1]==signs[2] );
     }
     
     int get_sign(){ return signs[1]; }
     
+    void shiftqs(double deltaq, double L, int exitmarker){
+        // delta needs to be defined from the start. For alexa488 in dextran(-) it is 2/1.5 = 1.33. L is the length of the rod, i.e. 3 * _boxsize
+        if (exitmarker==1){
+            dz0_q = fmod( L - dz0_q , deltaq ); //fmod, since % only works for integers
+        }
+        else{
+            dz0_q = fmod( L - (deltaq - dz0_q) , deltaq );
+        }
+    }
+    
     int ran_sign(){
         boost::variate_generator<boost::mt19937&, boost::uniform_int<>> zeroone(*_igen, boost::uniform_int<>(0, 1));
-	return (zeroone() * 2) - 1; //this calculation makes value either -1 or 1
+	    return (zeroone() * 2) - 1; //this calculation makes value either -1 or 1
+    }
+    
+    double atob(double a, double b){
+        boost::variate_generator<boost::mt19937&, boost::random::uniform_real_distribution<>> ran_gen(*_igen, boost::random::uniform_real_distribution<>(a, b));
+        return ran_gen();
     }
 };
 

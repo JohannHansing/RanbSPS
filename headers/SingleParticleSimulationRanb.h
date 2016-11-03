@@ -8,7 +8,7 @@
 #include <boost/filesystem.hpp>
 #include "CAverage.h"
 #include "CConfiguration.h"
-
+#include "parameter_structs.h"
 
 using namespace std;
 
@@ -24,33 +24,32 @@ string toString(const T& value){
 
 template <typename T, size_t N>
 inline
-size_t sizeOfArray( const T(&)[ N ] )
-{
+size_t sizeOfArray( const T(&)[ N ] ){
   return N;
 }
 
-
-string createDataFolder(bool setPBC, string distribution, double timestep, double simtime, double potRange, double potStrength,
-                        double particlesize, bool steric, bool ranRod, bool ranU, bool rand, double dvar, double polydiam, string tmp5){
+string createDataFolder(paramstruct ps){
     //NOTE: Maybe I can leave out dt, as soon as I settled on a timestep
     //NOTE: As soon as I create input-list with variables, I must change this function
-    char range[5];
-    sprintf(range, "%.3f", potRange);
+               //             cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ " <<tmp << endl;
+    char range[12];
+    sprintf(range, "%.3f", ps.urange);
     //In the definition of folder, the addition has to START WITH A STRING! for the compiler to know what to do (left to right).
     string folder = "sim_data";
-    if (setPBC) folder += "/setPBC";
-    if (ranU) folder = folder + "/ranU";
-    if (ranRod) folder += "/ranRod";
-    if (rand) folder += "/rand/d" + toString(dvar);
-    folder += "/" + distribution;
-    if (steric) folder = folder + "/steric";    //TODO steric2
+    if (ps.setPBC) folder += "/setPBC";
+    if (ps.Pointq) folder += "/pointq";
+    if (ps.ranU) folder = folder + "/ranU";
+    if (ps.ranRod) folder += "/ranRod";
+    if (ps.rand) folder += "/rand/d" + toString(ps.dvar);
+    folder += "/" + ps.distribution;
+    if (ps.includeSteric) folder = folder + "/steric";    //TODO steric2
     folder = folder
-            + "/dt" + toString(timestep)
-            + "/t" + toString(simtime)
-            + "/a" + toString(polydiam)
-            + "/p" + toString(particlesize)
+            + "/dt" + toString(ps.timestep)
+            + "/t" + toString(ps.simtime)
+            + "/a" + toString(ps.polydiam)
+            + "/p" + toString(ps.particlesize)
             + "/k" + range
-            + "/u" + toString(potStrength);
+            + "/u" + toString(ps.ustrength);
     boost::filesystem::create_directories(folder);
     boost::filesystem::create_directory(folder + "/InstantValues");
     boost::filesystem::create_directory(folder + "/Coordinates");
@@ -58,25 +57,24 @@ string createDataFolder(bool setPBC, string distribution, double timestep, doubl
 }
 
 
-void settingsFile(bool setPBC, string folder, bool ranRod, double particlesize, double timestep, double runs, double steps, double potStrength, double potRange,
-        bool rand, bool recordPosHisto, bool steric, bool ranU, string distribution, double dvar, double polydiam, string tmp5){
+void settingsFile(string folder, paramstruct ps){
     //Creates a file where the simulation settings are stored
     //MAYBE ALSO INCLUDE TIME AND DATE!!
     ofstream settingsfile;
     settingsfile.open((folder + "/sim_Settings.txt").c_str());
     settingsfile << "Sim dir: " << folder << endl;
-    settingsfile << "setPBC " << setPBC << endl;
-    settingsfile << "Pore Distribution " << distribution << endl;
-    settingsfile << "ranRod " << ranRod << endl;
-    settingsfile << "TMP " << recordPosHisto << endl;//" (Bessel)" << endl;  //TODO Bessel!
-    settingsfile << "rand " << rand << endl;
-    settingsfile << "includesteric " << steric << endl;
-    settingsfile << "ranU " << ranU  << endl;
-    settingsfile << "p " << particlesize << endl;
-    settingsfile << "dt " << timestep  << endl << "runs " << runs << endl << "steps " << steps << endl << "time: " << timestep*steps << endl;
-    settingsfile << "k " << potRange << endl << "U_0 " << potStrength << endl;
-    settingsfile << "dvar " << dvar << endl;
-    settingsfile << "a " << polydiam << endl;
+    settingsfile << "setPBC " << ps.setPBC << endl;
+    settingsfile << "Pointq " << ps.Pointq << endl;
+    settingsfile << "Pore Distribution " << ps.distribution << endl;
+    settingsfile << "ranRod " << ps.ranRod << endl;
+    settingsfile << "rand " << ps.rand << endl;
+    settingsfile << "includesteric " << ps.includeSteric << endl;
+    settingsfile << "ranU " << ps.ranU  << endl;
+    settingsfile << "p " << ps.particlesize << endl;
+    settingsfile << "dt " << ps.timestep  << endl << "runs " << ps.runs << endl << "steps " << ps.steps << endl << "time: " << ps.timestep*ps.steps << endl;
+    settingsfile << "k " << ps.urange << endl << "U_0 " << ps.ustrength << endl;
+    settingsfile << "dvar " << ps.dvar << endl;
+    settingsfile << "a " << ps.polydiam << endl;
 
     settingsfile.close();
 }

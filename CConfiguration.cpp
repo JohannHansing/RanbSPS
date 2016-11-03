@@ -8,25 +8,25 @@ using namespace Eigen;
 CConfiguration::CConfiguration(){
 }
 
-CConfiguration::CConfiguration(
-        bool setPBC, string distribution, double timestep,  double potRange,  double potStrength, const bool rand,
-        double psize, const bool posHisto, const bool steric, const bool ranU, bool ranRod, double dvar, double polydiam, string peptide){
+CConfiguration::CConfiguration( paramstruct ps ){
     setRanNumberGen(0);
-    _potRange = potRange;
-    _potStrength = potStrength;
-    _pradius = psize/2.;
+    _potRange = ps.urange;
+    _potStrength = ps.ustrength;
+    _pradius = ps.particlesize/2.;
     //TODO overlap
-    _polyrad = polydiam/2.;//TODO test
-    _polydiamSq = polydiam*polydiam;
+    _polyrad = ps.polydiam/2.;//TODO test
+    _polydiamSq = ps.polydiam*ps.polydiam;
     _cylLJSq = pow(_pradius + _polyrad,2);
     _cutoffExpSq = pow(6*_potRange + _pradius + _polyrad,2);
-    _timestep = timestep;
-    _ranRod = ranRod;
-    _LJPot = (steric == false) && (psize != 0);
-    _ranU = ranU;
-    _rand = rand;
-    _setPBC = setPBC;
-    _dvar = dvar;
+    _timestep = ps.timestep;
+    _ranRod = ps.ranRod;
+    _LJPot = (ps.includeSteric == false) && (ps.particlesize != 0);
+    _ranU = ps.ranU;
+    _rand = ps.rand;
+    _Pointq = ps.Pointq;
+    _dr_q = 1.33 * ps.particlesize; // 1.33 for alexa488 in dextran(-)
+    _setPBC = ps.setPBC;
+    _dvar = ps.dvar;
     _upot = 0;
     _mu_sto = sqrt( 2 * _timestep );                 //timestep for stochastic force
     for (int i = 0; i < 3; i++){
@@ -37,18 +37,18 @@ CConfiguration::CConfiguration(
         _boxCoord[i] = 0;
         _prevpos(i) = _ppos(i);
     }
-    if (distribution=="gamma"){
+    if (ps.distribution=="gamma"){
        cout << "_alpha = " << _alpha << endl;
     }
-    else if (distribution == "gamma2"){
+    else if (ps.distribution == "gamma2"){
         _alpha = 5.; _beta = 2.;
        cout << "_alpha = " << _alpha << endl;
     }
-    else if (distribution == "gamma4"){
+    else if (ps.distribution == "gamma4"){
         _alpha = 2.5; _beta = 4.;
        cout << "_alpha = " << _alpha << endl;
     }
-    else if (distribution == "fixb" ){
+    else if (ps.distribution == "fixb" ){
        _fixb = true;
        cout << "-----> b fixed !" << endl;
     }
@@ -67,8 +67,9 @@ CConfiguration::CConfiguration(
         //initRodsRel();
     }
     if (_rand){
-        cout << "init Rand..." << endl;
+        cout << "init Rand... " << endl;
         initRand();
+        cout << "done Rand init!" << endl;
     }
 }
 
@@ -149,6 +150,13 @@ bool CConfiguration::checkBoxCrossing(){
                 for (auto & vrods : _drods[i]){
                     for (auto & rod :  vrods){
                         rod.shiftSigns(exitmarker);
+                    }
+                }
+            }
+            if (_Pointq && !_setPBC){
+                for (auto & vrods : _drods[i]){
+                    for (auto & rod :  vrods){
+                        rod.shiftqs( _dr_q, 30, exitmarker);
                     }
                 }
             }
@@ -264,6 +272,23 @@ void CConfiguration::calcMobilityForces(){
         for (int j=0;j<cnt;j++){
             const double rSq = rSq_arr.at(j);
             calculateExpPotential(rSq, utmp, frtmp);
+
+            if (_Pointq){
+                // reset Force and Potential to zero
+                utmp=0; frtmp=0;
+                // calculate the potential for all point charges along the rod
+                int abcd = j/4;  int efgh = j%4;  double offset = _drods[plane][abcd][efgh].dz0_q;
+                int n_q = (int)(30. - offset)/_dr_q; // number of point charges along rod of length 30
+                offset -= 10.; //shift the offset, since rod starts at z= -10, not z=0 in the system coordinates
+                for (int i=1; i<=n_q; i++){
+                    double drz = _ppos(plane) - offset * i;
+                    double rSq_qi = rSq + pow(drz,2);  //distance to point charge i
+                    double frDebye = calcDebyePot(rSq_qi, utmp);
+                    // IMPORTANT: The 'plane' komponent of the Debye potential is already added to _f_mob for the tracer here
+                    _f_mob(plane) += frDebye * drz;
+                    frtmp += frDebye; // the rest is added below
+                }
+            }
 
         
             if (_ranU){
@@ -403,6 +428,15 @@ void CConfiguration::modifyPot(double& U, double& Fr, double weight){
     U *= weight;
     Fr *= weight;
 }
+
+double CConfiguration::calcDebyePot(double rSq, double& U){
+    if (rSq < _cutoffExpSq && _potStrength != 0){
+        const double r = sqrt(rSq);
+        U += _potStrength * exp(- r / _potRange)/r;
+        return U * (_potRange + r)/(_potRange*r*r);  //Fr += utmp * (1./ (_potRange * r) + 1./(r*r) );
+    }
+}
+
 
 //****************************STERIC HINDRANCE****************************************************//
 

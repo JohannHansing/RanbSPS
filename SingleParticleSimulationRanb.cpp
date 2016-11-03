@@ -9,16 +9,18 @@ int main(int argc, const char* argv[]){
 
     //NOTE: so far wallcrossings is added for all runs!!! makes it kind of incorrect, since after each run, ppos is reset.
     //NOTE: so far saving Instant Values for each tenth step!
+    
+    struct paramstruct ps;
 
     //TRIGGERS:
-    string distribution = argv[1];    // TODO
-    bool ranRod = (strcmp(argv[2] , "-X-") == 0 ) ;
-    bool rand = (strcmp(argv[3] , "-X-") == 0 ) ; 
-    bool setPBC = (strcmp(argv[4] , "-X-") == 0 ) ;  // TODO CHANGE THIS TO PBC or something
-    bool recordPosHisto = (strcmp(argv[5] , "-X-") == 0 ) ;
-    bool includeSteric = (strcmp(argv[6] , "-X-") == 0 ) ;  // steric 2
-    bool ranU = (strcmp(argv[7] , "-X-") == 0 ) ;
-    string tmp5 = argv[8];
+    ps.distribution = argv[1];    // TODO
+    ps.ranRod = (strcmp(argv[2] , "-X-") == 0 ) ;
+    ps.rand = (strcmp(argv[3] , "-X-") == 0 ) ; 
+    ps.setPBC = (strcmp(argv[4] , "-X-") == 0 ) ;  // TODO CHANGE THIS TO PBC or something
+    ps.Tmp4 = (strcmp(argv[5] , "-X-") == 0 ) ;
+    ps.includeSteric = (strcmp(argv[6] , "-X-") == 0 ) ;  // steric 2
+    ps.ranU = (strcmp(argv[7] , "-X-") == 0 ) ;
+    ps.Pointq = (strcmp(argv[8] , "-X-") == 0 ) ;
     int boolpar = 8;
     ifdebug(cout << "copied bools. ";)
 
@@ -31,57 +33,55 @@ int main(int argc, const char* argv[]){
         }
     }
 
-    int runs = atoi( argv[boolpar+1] );                       // Number of Simulation runs to get mean values from
-    double timestep = atof( argv[boolpar+2] );
-    int simtime = atoi( argv[boolpar+3] );                   // simulation time
-    int instantvalues = 200;
-    unsigned int steps;
+    ps.runs = atoi( argv[boolpar+1] );                       // Number of Simulation runs to get mean values from
+    ps.timestep = atof( argv[boolpar+2] );
+    ps.simtime = atoi( argv[boolpar+3] );                   // simulation time
+    ps.instantvalues = 200;
+    ps.steps = ps.simtime/ps.timestep;
 
-    double particlesize = atof( argv[boolpar+4] );
-    double urange = atof( argv[boolpar+5] );
-    double ustrength = atof( argv[boolpar+6] );
-    double dvar = atof( argv[boolpar+7] );
-    double polydiam = atof( argv[boolpar+8] );
-    unsigned int saveInt;
+    ps.particlesize = atof( argv[boolpar+4] );
+    ps.urange = atof( argv[boolpar+5] );
+    ps.ustrength = atof( argv[boolpar+6] );
+    ps.dvar = atof( argv[boolpar+7] );
+    ps.polydiam = atof( argv[boolpar+8] );
+
+    // main loop parameters
+    unsigned int saveInt= ps.steps/ps.instantvalues;
+    const int trajout = (int)(10/ps.timestep);
     int instValIndex;                             //Counter for addInstantValue
 
-    steps = simtime/timestep;
-    saveInt = steps/instantvalues;
-    const int trajout = (int)(10/timestep);
-    
+
 
     ifdebug(cout << "copied  params. ";)
 
-    cout << "distribution " << distribution << endl;
+    cout << "distribution " << ps.distribution << endl;
 
-    if (distribution != "fixb" && rand){
+    if (ps.distribution != "fixb" && ps.rand){
         cout << "b needs to be fixed at this time to include rand!" << endl;
         abort();
     }
-    if (ranRod  && rand){
+    if (ps.ranRod  && ps.rand){
         cout << "Cant have both rand and ranRod!" << endl;
         abort();
     }
-    if (ranRod  && ranU){
+    if ((ps.ranRod  && (ps.ranU || ps.Pointq)) || (ps.setPBC && ps.Pointq) || (ps.ranRod && ps.Pointq)){
         cout << "ranRod + ranU will not work properly due to definition of calcMobilityForces for ranU!" << endl;
+        cout << "Or some other bad combination of bool parameters!" << endl;
         abort();
     }
 
     //Create data folders and print location as string to string "folder"
-    string folder = createDataFolder(setPBC, distribution, timestep, simtime, urange, ustrength, particlesize, includeSteric, ranRod, ranU, rand, 
-                             dvar,polydiam, tmp5);
+    string folder = createDataFolder( ps);
     ifdebug(cout << "created folder. ";)
     cout << "writing to folder " << folder << endl;
 
-
     //initialize averages
-    CAverage energyU = CAverage("Upot", folder, instantvalues, runs);
-    CAverage squareDisp = CAverage("squaredisp", folder, instantvalues, runs);
+    CAverage energyU = CAverage("Upot", folder, ps.instantvalues, ps.runs);
+    CAverage squareDisp = CAverage("squaredisp", folder, ps.instantvalues, ps.runs);
     ifdebug(cout << "created CAverage files. ";)
 
     //initialize instance of configuration
-    CConfiguration conf = CConfiguration(setPBC, distribution,timestep, urange, ustrength, rand, particlesize, recordPosHisto, 
-                            includeSteric, ranU, ranRod, dvar,polydiam, tmp5);
+    CConfiguration conf = CConfiguration(ps);
     ifdebug(cout << "created CConf conf. ";)
 
 
@@ -94,8 +94,7 @@ int main(int argc, const char* argv[]){
     // TODO distancefile
     distancesfile.open((folder + "/Coordinates/squareDistances.txt").c_str());
     
-    settingsFile(setPBC, folder, ranRod, particlesize, timestep, runs, steps, ustrength, urange, rand, recordPosHisto, includeSteric, ranU, distribution, 
-                    dvar, polydiam, tmp5);
+    settingsFile(folder, ps);
                     
     //create .xyz file to save the trajectory for VMD
     //string traj_file = folder + "/Coordinates/single_traj.xyz";
@@ -104,10 +103,10 @@ int main(int argc, const char* argv[]){
     // write rod positions of rods are fixed throughout the simulation
     ofstream rodPosFile;
     FILE*  snapFile;
-    if (setPBC){
+    if (ps.setPBC){
         rodPosFile.open((folder + "/Coordinates/rodposfile.txt").c_str());
         rodPosFile << "set rad 0.15\nmol new" << endl;
-        if (ranU) conf.writeRodForVMDranU(rodPosFile);
+        if (ps.ranU) conf.writeRodForVMDranU(rodPosFile);
         else conf.writeRodForVMD(rodPosFile);
         snapFile = fopen((folder + "/Coordinates/snapFile.xyz").c_str(), "w");
         fprintf(snapFile, "%s\n%s (%8.3f %8.3f %8.3f) t=%u \n", "XXX", "sim_name", 10., 10., 10., 0);
@@ -120,14 +119,14 @@ int main(int argc, const char* argv[]){
 
 
 // **************START OF RUNS-LOOP
-    for (int l = 0; l<runs; l++){
+    for (int l = 0; l<ps.runs; l++){
 
         conf.updateStartpos();
 
         instValIndex = 0;
 
 
-        for (int i = 0; i < steps; i++){  //calculate stochastic force first, then mobility force!!
+        for (int i = 0; i < ps.steps; i++){  //calculate stochastic force first, then mobility force!!
 
 
             conf.calcStochasticForces();
@@ -144,20 +143,20 @@ int main(int argc, const char* argv[]){
             conf.makeStep();    //move particle at the end of iteration
 
             /*
-            if (includeSteric && conf.testOverlap()) conf.moveBack();   //TODO steric2
+            if (ps.includeSteric && conf.testOverlap()) conf.moveBack();   //TODO steric2
             else conf.checkBoxCrossing();
             */
 
 
 
                 //TODO steric
-            while (includeSteric && conf.testOverlap()){
+            while (ps.includeSteric && conf.testOverlap()){
                 conf.moveBack();
                 conf.calcStochasticForces();
                 conf.makeStep();
             }
             if (conf.checkBoxCrossing()){//check if particle has crossed the confinement of the box
-                // if (setPBC){
+                // if (ps.setPBC){
 //                     rodPosFile << "#" << endl;
 //                     conf.writeRodForVMD(rodPosFile);
 //                 }
@@ -166,13 +165,13 @@ int main(int argc, const char* argv[]){
             stepcount++;
             if (stepcount%trajout == 0) {
                 std::vector<double> ppos = conf.getppos();
-                trajectoryfile << fixed << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;
-                ifdebug(cout << stepcount * timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;)
+                trajectoryfile << fixed << stepcount * ps.timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;
+                ifdebug(cout << stepcount * ps.timestep << "\t" << ppos[0] << " " << ppos[1] << " " << ppos[2] << endl;)
                 //TODO pass distancefile to function in conf.
                 if (stepcount%(10*trajout) == 0){
                     conf.writeDistances( distancesfile, stepcount);
                 }
-                if (setPBC && (stepcount%(10*trajout) == 0)){ //should be 10
+                if (ps.setPBC && (stepcount%(10*trajout) == 0)){ //should be 10
                     std::vector<double> ppos = conf.getppos_rel();
                     fprintf(snapFile, "%3s%9.3f%9.3f%9.3f \n","H", ppos[0], ppos[1],  ppos[2]);
                 }
@@ -185,13 +184,13 @@ int main(int argc, const char* argv[]){
             }
         }
         if (l==0){
-            //conf.saveXYZTraj(traj_file, steps, "c"); // Close XYZ traj_file
+            //conf.saveXYZTraj(traj_file, ps.steps, "c"); // Close XYZ traj_file
         }
         
         if (l%50 == 0){
             cout << "run " << l << endl;
-            fflush(snapFile); // flush the snapFile data to file
-            energyU.saveAverageInstantValues(saveInt*timestep);
+            if (ps.setPBC) fflush(snapFile); // flush the snapFile data to file
+            energyU.saveAverageInstantValues(saveInt*ps.timestep);
         }
 
 
@@ -199,19 +198,19 @@ int main(int argc, const char* argv[]){
 
 
 
-    //watch out: Save average instant values at timeInterval: timestep * saveinterval saveInt!!!
-    squareDisp.saveAverageInstantValues(saveInt*timestep);
+    //watch out: Save average instant values at timeInterval: ps.timestep * saveinterval saveInt!!!
+    squareDisp.saveAverageInstantValues(saveInt*ps.timestep);
 
 
 
 
-    //printReport(ranRod, conf.getwallcrossings(0), conf.getwallcrossings(1), conf.getwallcrossings(2), timestep, urange, ustrength, rodDist, particlesize, runs,
-    //        sizeOfArray(timestep), sizeOfArray(urange), sizeOfArray(ustrength), sizeOfArray(rodDist), sizeOfArray(particlesize), potentialMod, includeSteric);
+    //printReport(ranRod, conf.getwallcrossings(0), conf.getwallcrossings(1), conf.getwallcrossings(2), ps.timestep, ps.urange, ps.ustrength, rodDist, ps.particlesize, ps.runs,
+    //        sizeOfArray(ps.timestep), sizeOfArray(ps.urange), sizeOfArray(ps.ustrength), sizeOfArray(rodDist), sizeOfArray(ps.particlesize), potentialMod, ps.includeSteric);
 
 
     cout << "Simulation Finished" << endl;
 
-    fclose(snapFile);
+    if (ps.setPBC)  fclose(snapFile);
     trajectoryfile.close();
     rodPosFile.close();
     // TODO distancefile
