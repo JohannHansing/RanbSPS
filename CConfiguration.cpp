@@ -279,10 +279,9 @@ void CConfiguration::calcMobilityForces(){
                 // calculate the potential for all point charges along the rod
                 int abcd = j/4;  int efgh = j%4;  double offset = _drods[plane][abcd][efgh].dz0_q;
                 int n_q = (int)(30. - offset)/_dr_q; // number of point charges along rod of length 30
-                offset -= 10.; //shift the offset, since rod starts at z= -10, not z=0 in the system coordinates
                 for (int i=1; i<=n_q; i++){
-                    double drz = _ppos(plane) - offset * i;
-                    double rSq_qi = rSq + pow(drz,2);  //distance to point charge i
+                    double drz = _ppos(plane) - (offset - 10. + i * _dr_q); //shift of -10, since rod starts at z= -10, not z=0 in the system coordinates
+                    double rSq_qi = rSq + pow(drz, 2);  //distance to point charge i
                     double frDebye = calcDebyePot(rSq_qi, utmp);
                     // IMPORTANT: The 'plane' komponent of the Debye potential is already added to _f_mob for the tracer here
                     _f_mob(plane) += frDebye * drz;
