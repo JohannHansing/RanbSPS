@@ -202,7 +202,6 @@ void CConfiguration::calcMobilityForces(){
         int k = i + 1;   //k always one direction "further", i.e. if i = 0 = x-direction, then k = 1 = y-direction
         if ( k == 3 ) k = 0;
         int plane = 3 - (i+k); //this is the current plane of the cylindrical coordinates
-        int n = 0;     // reset counter for index of next rod in plane  n = 0, 1, 2, 3 -> only needed for ranPot
         double z1, z2, z1inv;
         if (_ranU){
             z1 = 0.25 * _boxsize[plane];
@@ -279,9 +278,9 @@ void CConfiguration::calcMobilityForces(){
                 // calculate the potential for all point charges along the rod
                 int abcd = j/4;  int efgh = j%4;  double offset = _drods[plane][abcd][efgh].dz0_q;
                 int n_q = (int)(30. - offset)/_dr_q; // number of point charges along rod of length 30
-                for (int i=1; i<=n_q; i++){
-                    double drz = _ppos(plane) - (offset - 10. + i * _dr_q); //shift of -10, since rod starts at z= -10, not z=0 in the system coordinates
-                    double rSq_qi = rSq + pow(drz, 2);  //distance to point charge i
+                for (int qi=0; qi<n_q; qi++){
+                    double drz = _ppos(plane) - (offset + qi * _dr_q - 10.); //shift of -10, since rod starts at z= -10, not z=0 in the system coordinates
+                    double rSq_qi = rSq + pow(drz, 2);  //distance to point charge qi
                     double frDebye = calcDebyePot(rSq_qi, utmp);
                     // IMPORTANT: The 'plane' komponent of the Debye potential is already added to _f_mob for the tracer here
                     _f_mob(plane) += frDebye * drz;
@@ -431,9 +430,11 @@ void CConfiguration::modifyPot(double& U, double& Fr, double weight){
 double CConfiguration::calcDebyePot(double rSq, double& U){
     if (rSq < _cutoffExpSq && _potStrength != 0){
         const double r = sqrt(rSq);
-        U += _potStrength * exp(- r / _potRange)/r;
-        return U * (_potRange + r)/(_potRange*r*r);  //Fr += utmp * (1./ (_potRange * r) + 1./(r*r) );
+        double utmp = _potStrength * exp(- r / _potRange)/r; // calculate utmp separately , since it is used to calculate the force
+        U += utmp;
+        return utmp * (_potRange + r)/(_potRange*r*r);  //Fr += utmp * (1./ (_potRange * r) + 1./(r*r) );
     }
+    return 0;
 }
 
 
