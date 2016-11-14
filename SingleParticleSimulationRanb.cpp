@@ -102,17 +102,19 @@ int main(int argc, const char* argv[]){
     //conf.saveXYZTraj(traj_file,0,"w");
     
     // write rod positions of rods are fixed throughout the simulation
-    ofstream rodPosFile;
+    ofstream rodPosFileVMD;
     FILE*  snapFile;
     if (ps.setPBC){
-        rodPosFile.open((folder + "/Coordinates/rodposfile.txt").c_str());
-        rodPosFile << "set rad 0.15\nmol new" << endl;
-        if (ps.ranU) conf.writeRodForVMDranU(rodPosFile);
-        else conf.writeRodForVMD(rodPosFile);
+        rodPosFileVMD.open((folder + "/Coordinates/rodPosFileVMD.txt").c_str());
+        rodPosFileVMD << "set rad 0.15\nmol new" << endl;
+        if (ps.ranU) conf.writeRodForVMDranU(rodPosFileVMD);
+        else conf.writeRodForVMD(rodPosFileVMD);
         snapFile = fopen((folder + "/Coordinates/snapFile.xyz").c_str(), "w");
         fprintf(snapFile, "%s\n%s (%8.3f %8.3f %8.3f) t=%u \n", "XXX", "sim_name", 10., 10., 10., 0);
     }
     
+    ofstream rodsfile;
+    rodsfile.open((folder + "/Coordinates/rodsfile.txt").c_str());
 
 
     //cout << "Starting Run Number: " << simcounter << " out of " << totalsims << endl;
@@ -158,8 +160,8 @@ int main(int argc, const char* argv[]){
             }
             if (conf.checkBoxCrossing()){//check if particle has crossed the confinement of the box
                 // if (ps.setPBC){
-//                     rodPosFile << "#" << endl;
-//                     conf.writeRodForVMD(rodPosFile);
+//                     rodPosFileVMD << "#" << endl;
+//                     conf.writeRodForVMD(rodPosFileVMD);
 //                 }
             }
 
@@ -192,9 +194,8 @@ int main(int argc, const char* argv[]){
             cout << "run " << l << endl;
             if (ps.setPBC) fflush(snapFile); // flush the snapFile data to file
             energyU.saveAverageInstantValues(saveInt*ps.timestep);
+            conf.writeRodsToFile(rodsfile, stepcount*ps.timestep);
         }
-
-
     }//----------END OF RUNS-LOOP
 
 
@@ -213,7 +214,8 @@ int main(int argc, const char* argv[]){
 
     if (ps.setPBC)  fclose(snapFile);
     trajectoryfile.close();
-    rodPosFile.close();
+    rodPosFileVMD.close();
+    rodsfile.close();
     // TODO distancefile
     distancesfile.close();
 

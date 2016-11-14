@@ -235,7 +235,7 @@ private:
             }
             ifdebug(
                 cout << axis << endl;
-                prinRodPos(axis);
+                printRodPos(axis);
             )
         }
     }
@@ -360,7 +360,7 @@ private:
                 }
             }
         }
-        ifdebug(prinRodPos(0);)
+        ifdebug(printRodPos(0);)
     }
     
     void updateRand(int crossaxis,int exitmarker){
@@ -530,7 +530,7 @@ private:
         return false;
     }
 
-    void prinRodPos(int axis){
+    void printRodPos(int axis){
         for (int irod=0;irod<_drods[axis].size();irod++){
             for (int jrod=0;jrod<_drods[axis].size();jrod++){
                 double rx =_drods[axis][irod][jrod].coord[0];
@@ -627,6 +627,21 @@ public:
             }
         }
         distancesfile << endl;
+    }
+    
+    void writeRodsToFile(ostream & file, double simtime){
+        file << simtime << ", ";
+        for (int axis=0;axis<3;axis++){
+            for (int irod=0;irod<_drods[axis].size();irod++){
+                for (int jrod=0;jrod<_drods[axis].size();jrod++){
+                    double rx =_drods[axis][irod][jrod].coord[0];
+                    double ry =_drods[axis][irod][jrod].coord[1];
+                    double rz =_drods[axis][irod][jrod].coord[2];
+                    file << " " << rx << " " << ry << " " << rz << ", ";
+                }
+            }
+        }
+        file << endl;
     }
     
     void writeRodForVMD(ofstream & file){

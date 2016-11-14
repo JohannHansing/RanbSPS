@@ -160,7 +160,7 @@ bool CConfiguration::checkBoxCrossing(){
                     }
                 }
             }
-            ifdebug(prinRodPos(i);)
+            ifdebug(printRodPos(i);)
         }
     }
     return crossing;
