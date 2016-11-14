@@ -189,6 +189,9 @@ int main(int argc, const char* argv[]){
         if (l==0){
             //conf.saveXYZTraj(traj_file, ps.steps, "c"); // Close XYZ traj_file
         }
+        if (l%20 == 0){
+            conf.writeRodsToFile(rodsfile, stepcount*ps.timestep);
+        }
         
         if (l%50 == 0){
             cout << "run " << l << endl;
