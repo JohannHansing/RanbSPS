@@ -30,6 +30,7 @@ class CConfiguration {
 private:
     //MISC
     FILE* m_traj_file;
+    paramstruct _ps;
     
     //SCALING
     double _timestep;         //This is the RESCALED timestep! timestep = dt * kT / (frictionCoeffcient * particlesize)
@@ -49,8 +50,7 @@ private:
     double _rodDistance;
     double _cutoffExpSq;
     double _cylLJSq;    //square of steric interaction parameter between cylinder and tracer particle _pradius + _polyrad
-    
-    
+
 
 
     //bool Parameters
@@ -355,7 +355,7 @@ private:
                         overlaps= testTracerOverlap(i, j, xipos, xjpos);
                         //cout << "Repeat?";
                     }
-                    CRod newRod = CRod(axis, xipos, xjpos, _ranU, m_igen, _Pointq, _dr_q );
+                    CRod newRod = CRod(axis, xipos, xjpos, _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio );
                     _drods[axis][abcd][efgh] = newRod;
                 }
             }
@@ -391,7 +391,7 @@ private:
                 //Example: -_b_array[j][0] , 0
                    //      0 , _b_array[j][1]
                    //      _b_array[j][1], _b_array[j][1]+ _b_array[j][2]
-                _drods[i][abcd][3] = CRod(i, 0., 0., _ranU, m_igen, _Pointq, _dr_q ); // make a new rod with same axis
+                _drods[i][abcd][3] = CRod(i, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio); // make a new rod with same axis
                 overlaps=true;
                 while (overlaps){
                     _drods[i][abcd][3].coord[crossaxis] = 2*_bdef + ran_norm();
@@ -401,7 +401,7 @@ private:
                         || testRodOverlap(i, crossaxis, j, _drods[i][abcd][3].coord[crossaxis], _drods[i][abcd][3].coord[j]);
                     //cout << "Repeat?";
                 }
-                _drods[j][3][abcd] = CRod(j, 0., 0., _ranU, m_igen, _Pointq, _dr_q ); // make a new rod with same axis
+                _drods[j][3][abcd] = CRod(j, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio ); // make a new rod with same axis
                 overlaps=true;
                 while (overlaps){
                     _drods[j][3][abcd].coord[crossaxis] = 2*_bdef + ran_norm();
@@ -427,7 +427,7 @@ private:
             cellInterval_aj = - _bdef;
             for (int abcd=0;abcd<4;abcd++){
                 rotate_right(_drods[i][abcd]);
-                _drods[i][abcd][0] = CRod(i, 0., 0., _ranU, m_igen, _Pointq, _dr_q ); // make a new rod with same axis
+                _drods[i][abcd][0] = CRod(i, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio ); // make a new rod with same axis
                 // new rod positions
                 overlaps=true;
                 while (overlaps){
@@ -437,7 +437,7 @@ private:
                         //TODO overlap
                         || testRodOverlap(i, crossaxis, j, _drods[i][abcd][0].coord[crossaxis], _drods[i][abcd][0].coord[j]);
                 }
-                _drods[j][0][abcd] = CRod(j, 0., 0., _ranU, m_igen, _Pointq, _dr_q ); // make a new rod with same axis
+                _drods[j][0][abcd] = CRod(j, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio ); // make a new rod with same axis
                 overlaps=true;
                 while (overlaps){
                     _drods[j][0][abcd].coord[crossaxis] = -_bdef + ran_norm();
@@ -457,52 +457,6 @@ private:
             }
         )
     }
-    
-    // TODO DELETE
-    // void updateRandFix(int crossaxis,int exitmarker){
-//         //This is almost the same as updateRand, but adapted for a constant lattice
-//         bool overlaps;
-//         double cellInterval_ai, cellInterval_aj;
-//         int i,j;
-//         i=crossaxis+1;
-//         if (i==3) i =0;
-//         j=3-(i+crossaxis);
-//         // rotate around rods in cells abc and def and reassign
-//         if (exitmarker == 1){
-//             // shift positions of rods USING PREVIOUS b ARRAY _b_array_prev!
-//             for (int abcd=0; abcd<4;abcd++){
-//                 for (int efgh=0; efgh<4;efgh++){
-//                     _drods[i][abcd][efgh].coord[crossaxis] -= _bdef;
-//                     _drods[j][abcd][efgh].coord[crossaxis] -= _bdef;
-//                 }
-//             }
-//             rotate_left(_drods[j]);
-//             for (int abcd=0;abcd<4;abcd++){
-//                 rotate_left(_drods[i][abcd]);
-//                 _drods[i][abcd][3].coord[crossaxis] += 3*_bdef;
-//                 _drods[i][abcd][3].coord[j] += 3*_bdef;
-//                 _drods[j][3][abcd].coord[crossaxis] += 3*_bdef;
-//                 _drods[j][3][abcd].coord[i] += 3*_bdef;
-//             }
-//         }
-//         else{
-//             // shift positions of rods
-//             for (int abcd=0; abcd<4;abcd++){
-//                 for (int efgh=0; efgh<4;efgh++){
-//                     _drods[i][abcd][efgh].coord[crossaxis] += _bdef;
-//                     _drods[j][abcd][efgh].coord[crossaxis] += _bdef;
-//                 }
-//             }
-//             rotate_right(_drods[j]);
-//             for (int abcd=0;abcd<4;abcd++){
-//                 rotate_right(_drods[i][abcd]);
-//                 _drods[i][abcd][0].coord[crossaxis] -= 3*_bdef;
-//                 _drods[i][abcd][0].coord[j] -= 3*_bdef;
-//                 _drods[j][0][abcd].coord[crossaxis] -= 3*_bdef;
-//                 _drods[j][0][abcd].coord[i] -= 3*_bdef;
-//             }
-//         }
-//     }
 
 
     bool testTracerOverlap(int i, int j, double ri, double rj){

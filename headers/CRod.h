@@ -27,7 +27,7 @@ private:
 public:
     int axis; // rod parallel to axis 0 = x, axis 1 = y, etc.
     Eigen::Vector3d coord; // Coordinate of rod in 2D plane orthogonal to axis. the coord parallel to axis is always 0. (see initiaion)
-    array <int,4> signs; //this array stores the signs of the charge along the polymer backbone (4 signs, for pbc similations)
+    array <double,4> signs; //this array stores the signs of the charge along the polymer backbone (4 signs, for pbc similations)
     array <bool,2> samesign;
     boost::mt19937 *_igen;
     
@@ -35,7 +35,7 @@ public:
     double dz0_q = 0;
     
     CRod();
-    CRod(int ax, double xi, double xj, bool ranU, boost::mt19937 *igen, bool Pointq=false, double dr_q=0.);
+    CRod(int ax, double xi, double xj, bool ranU, boost::mt19937 *igen, bool Pointq=false, double dr_q=0., bool mixU=false, double uratio=0, double Cratio=0);
     void shiftSigns(int exitmarker){
         // When the particle leaves the central cell and the system is shifted, the signs along the polymer need to be shifted, too.
         if (exitmarker==1){

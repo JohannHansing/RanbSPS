@@ -10,6 +10,9 @@ CConfiguration::CConfiguration(){
 
 CConfiguration::CConfiguration( paramstruct ps ){
     setRanNumberGen(0);
+    _ps = ps;
+    // if (_ps.mixU==true && _ps.Cratio==0) {_ps.mixU=false; }
+    // if (_ps.mixU==true && _ps.Cratio==0) {_ps.mixU=false; _potStrength *= -ps.uratio;}
     _potRange = ps.urange;
     _potStrength = ps.ustrength;
     _pradius = ps.particlesize/2.;
@@ -137,7 +140,7 @@ bool CConfiguration::checkBoxCrossing(){
         }
         if (exitmarker!=0){
             crossing = true;
-            updateRanb(i,exitmarker);
+            updateRanb(i,exitmarker);//this does nothing if _fixb is activated
             if (_rand && !_setPBC){
                 updateRand(i,exitmarker);
             }
@@ -289,18 +292,18 @@ void CConfiguration::calcMobilityForces(){
             }
 
         
-            if (_ranU){
+            if (_ranU || _ps.mixU){
                 int abcd = j/4;
                 int efgh = j%4;
-                int sign = _drods[plane][abcd][efgh].signs[1];
+                double sign = _drods[plane][abcd][efgh].signs[1];
                 if (_setPBC){
                     // NOTE: Samesign check is not implemented for pbc!
                     int izpos=(int)((_ppos(plane)+10)/10.); //this is between 0 and 3
                     sign = _drods[plane][abcd][efgh].signs[izpos];
                 }
-                utmp *= sign;
+                utmp *= sign;// for mixU attractive case: sign = uratio = uAtt/uRep
                 frtmp *= sign;
-                if (!_setPBC){
+                if (_ranU && !_setPBC){
                     if (_ppos(plane) > z2){
                         if (! _drods[plane][abcd][efgh].samesign[1]){
                             _f_mob(plane) += utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force

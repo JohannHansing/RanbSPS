@@ -20,6 +20,7 @@ struct paramstruct {
     bool includeSteric;
     bool ranU;
     bool Pointq;
+    bool mixU;
 
     int runs;
     double timestep;
@@ -33,6 +34,8 @@ struct paramstruct {
     double dvar;
     double polydiam;
     double drqop;
+    double Cratio; // = Catt/Crep
+    double uratio; //  = Uatt/Urep
 };
 
 

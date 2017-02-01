@@ -17,7 +17,7 @@ int main(int argc, const char* argv[]){
     ps.ranRod = (strcmp(argv[2] , "-X-") == 0 ) ;
     ps.rand = (strcmp(argv[3] , "-X-") == 0 ) ; 
     ps.setPBC = (strcmp(argv[4] , "-X-") == 0 ) ;  // TODO CHANGE THIS TO PBC or something
-    ps.Tmp4 = (strcmp(argv[5] , "-X-") == 0 ) ;
+    ps.mixU = (strcmp(argv[5] , "-X-") == 0 ) ;
     ps.includeSteric = (strcmp(argv[6] , "-X-") == 0 ) ;  // steric 2
     ps.ranU = (strcmp(argv[7] , "-X-") == 0 ) ;
     ps.Pointq = (strcmp(argv[8] , "-X-") == 0 ) ;
@@ -45,6 +45,8 @@ int main(int argc, const char* argv[]){
     ps.dvar = atof( argv[boolpar+7] );
     ps.polydiam = atof( argv[boolpar+8] );
     ps.drqop = atof( argv[boolpar+9] );
+    ps.uratio = atof( argv[boolpar+10] );   // = Uatt/Urep
+    ps.Cratio = atof( argv[boolpar+11] );   // = Catt/Crep
 
     // main loop parameters
     unsigned int saveInt= ps.steps/ps.instantvalues;
