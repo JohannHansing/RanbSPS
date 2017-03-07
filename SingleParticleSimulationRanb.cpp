@@ -121,8 +121,7 @@ int main(int argc, const char* argv[]){
 
     //cout << "Starting Run Number: " << simcounter << " out of " << totalsims << endl;
     cout << "Starting Simulation!" << endl;
-
-
+    
 // **************START OF RUNS-LOOP
     for (int l = 0; l<ps.runs; l++){
 

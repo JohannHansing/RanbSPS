@@ -31,22 +31,28 @@ public:
     array <bool,2> samesign;
     boost::mt19937 *_igen;
     
+    // ratio stuff
+    double uratio;
+    double Cratio;
+    
     // offset for "lowest" point charge
     double dz0_q = 0;
     
     CRod();
-    CRod(int ax, double xi, double xj, bool ranU, boost::mt19937 *igen, bool Pointq=false, double dr_q=0., bool mixU=false, double uratio=0, double Cratio=0);
+    CRod(int ax, double xi, double xj, bool ranU, boost::mt19937 *igen, bool Pointq=false, double dr_q=0., bool mixU=false, double uratio_in=1., double Cratio_in=1);
     void shiftSigns(int exitmarker){
         // When the particle leaves the central cell and the system is shifted, the signs along the polymer need to be shifted, too.
         if (exitmarker==1){
             signs[0]=signs[1];
             signs[1]=signs[2];
-            signs[2]=ran_sign();
+            //signs[2]=ran_sign();
+            set_sign(signs[2]);
         }
         else{
             signs[2]=signs[1];
             signs[1]=signs[0];
-            signs[0]=ran_sign();
+            //signs[0]=ran_sign();
+            set_sign(signs[0]);
         }
         checksamesign();
     }
@@ -78,6 +84,13 @@ public:
     double atob(double a, double b){
         boost::variate_generator<boost::mt19937&, boost::random::uniform_real_distribution<>> ran_gen(*_igen, boost::random::uniform_real_distribution<>(a, b));
         return ran_gen();
+    }
+    
+    void set_sign(double & sign){
+        // first determine if att or neut according to Cratio  : P(att) = C(att)/ [ C(rep) + C(att) ] = C(att)/C(rep) / [ 1 + C(att)/C(rep) ] = Cratio/(1+Cratio)
+        // hence, if the below is true, we obtain the negative sign, since we are below P(att). Note that 0 < P(att) < 1
+        if (atob(0.,1.) < Cratio/(1.+Cratio)) sign=-1.*uratio;
+        else sign = 1.;// in this case the sign does not change, we obtain the repulsive u
     }
 };
 

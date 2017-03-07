@@ -39,7 +39,8 @@ string createDataFolder(paramstruct ps){
     if (ps.setPBC) folder += "/setPBC";
     if (ps.Pointq) folder += "/pointq/drqop"+ toString(ps.drqop);
     if (ps.ranU) folder = folder + "/ranU";
-    if (ps.mixU) folder += "/mixU/uratio" + toString(ps.uratio) + "/Cratio" + toString(ps.Cratio);
+    if (ps.mixU) folder += "/mixU";
+    if (ps.mixU || ps.ranU) folder += "/uratio" + toString(ps.uratio) + "/Cratio" + toString(ps.Cratio);
     if (ps.ranRod) folder += "/ranRod";
     if (ps.rand) folder += "/rand/d" + toString(ps.dvar);
     folder += "/" + ps.distribution;
@@ -78,7 +79,7 @@ void settingsFile(string folder, paramstruct ps){
     settingsfile << "dvar " << ps.dvar << endl;
     settingsfile << "a " << ps.polydiam << endl;
     settingsfile << "drqop " << ps.drqop << endl;
-    if (ps.mixU){
+    if (ps.mixU || ps.ranU){
         settingsfile << "uratio " << ps.uratio << endl;
         settingsfile << "Cratio " << ps.Cratio << endl;
     }

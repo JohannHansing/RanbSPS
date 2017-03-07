@@ -301,7 +301,8 @@ void CConfiguration::calcMobilityForces(){
                     int izpos=(int)((_ppos(plane)+10)/10.); //this is between 0 and 3
                     sign = _drods[plane][abcd][efgh].signs[izpos];
                 }
-                utmp *= sign;// for mixU attractive case: sign = uratio = uAtt/uRep
+                utmp *= sign;// attractive case: sign = uratio = uAtt/uRep
+                
                 frtmp *= sign;
                 if (_ranU && !_setPBC){
                     if (_ppos(plane) > z2){
