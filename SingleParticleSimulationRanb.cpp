@@ -47,7 +47,12 @@ int main(int argc, const char* argv[]){
     ps.drqop = atof( argv[boolpar+9] );
     ps.uratio = atof( argv[boolpar+10] );   // = Uatt/Urep
     ps.Cratio = atof( argv[boolpar+11] );   // = Catt/Crep
-
+    if (ps.Cratio==0){
+        // ps.Cratio==0 means that default has been set for Cratio and uratio in the job script. Default is 1 for both
+        ps.uratio=1.; ps.Cratio=1;
+        cout << "--> default: uratio=" << ps.uratio <<" and Cratio="<< ps.Cratio << endl;
+    }
+    
     // main loop parameters
     unsigned int saveInt= ps.steps/ps.instantvalues;
     const int trajout = (int)(10/ps.timestep);
