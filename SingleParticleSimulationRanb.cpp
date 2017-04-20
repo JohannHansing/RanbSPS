@@ -2,7 +2,7 @@
 
 using namespace std;
 
-
+#include <boost/algorithm/string.hpp>
 
 int main(int argc, const char* argv[]){
     //Main includes the iteration loops for the simulation
@@ -14,20 +14,20 @@ int main(int argc, const char* argv[]){
 
     //TRIGGERS:
     ps.distribution = argv[1];    // TODO
-    ps.ranRod = (strcmp(argv[2] , "-X-") == 0 ) ;
-    ps.rand = (strcmp(argv[3] , "-X-") == 0 ) ; 
-    ps.setPBC = (strcmp(argv[4] , "-X-") == 0 ) ;  // TODO CHANGE THIS TO PBC or something
-    ps.mixU = (strcmp(argv[5] , "-X-") == 0 ) ;
-    ps.includeSteric = (strcmp(argv[6] , "-X-") == 0 ) ;  // steric 2
-    ps.ranU = (strcmp(argv[7] , "-X-") == 0 ) ;
-    ps.Pointq = (strcmp(argv[8] , "-X-") == 0 ) ;
+    ps.ranRod = boost::iequals(argv[2] , "-X-")  ;
+    ps.rand = boost::iequals(argv[3] , "-X-"); 
+    ps.setPBC = boost::iequals(argv[4] , "-X-")  ;  // TODO CHANGE THIS TO PBC or something
+    ps.mixU = boost::iequals(argv[5] , "-X-")  ;
+    ps.includeSteric = boost::iequals(argv[6] , "-X-")  ;  // steric 2
+    ps.ranU = boost::iequals(argv[7] , "-X-")  ;
+    ps.Pointq = boost::iequals(argv[8] , "-X-")  ;
     int boolpar = 8;
     ifdebug(cout << "copied bools. ";)
 
     // Checking for correct structure of input arguments
     for (int k= 1; k < argc; k++ ) cout << "parameter " << k << " " << argv[k] << endl;
     for (int b_i=2; b_i<boolpar; b_i++){
-        if (!((strcmp(argv[b_i] , "-X-") == 0 )  || (strcmp(argv[b_i] , "---") == 0 ))){
+        if (!(boost::iequals(argv[b_i] , "-X-")  || boost::iequals(argv[b_i] , "---") )){
             cerr << "Error; Bool parameter " << b_i << " is not either '-X-' or '---'!" << endl;
             exit(1);
         }

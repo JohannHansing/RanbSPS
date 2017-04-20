@@ -66,7 +66,8 @@ CConfiguration::CConfiguration( paramstruct ps ){
 
     if (_ranRod){
         //TODO rel
-        initRodsArr();
+        if (ps.distribution == "fixb") inittrueRan();
+        else initRodsArr();
         //initRodsRel();
     }
     if (_rand){
@@ -145,8 +146,9 @@ bool CConfiguration::checkBoxCrossing(){
                 updateRand(i,exitmarker);
             }
             if (_ranRod){
-                //TODO rel
-                updateRodsArr(i, exitmarker);
+                ifdebug(cout<<"AXIS " << i << " , ROD POSITIONS BEFORE: " << endl; printRodPos(0);)
+                if (_fixb) updatetrueRan(i, exitmarker);
+                else updateRodsArr(i, exitmarker);
                 //updateRodsRel(i, exitmarker);
             }
             if (_ranU && !_setPBC){
@@ -163,7 +165,7 @@ bool CConfiguration::checkBoxCrossing(){
                     }
                 }
             }
-            ifdebug(printRodPos(i);)
+            ifdebug(cout<< "ROD POSITIONS  AFTER: " << endl; printRodPos(0);)
         }
     }
     return crossing;

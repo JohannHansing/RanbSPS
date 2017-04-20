@@ -21,6 +21,17 @@ string toString(const T& value){
     return oss.str();
 }
 
+string numString( float x ){
+    // from http://stackoverflow.com/questions/18881854/how-to-output-float-to-cout-without-scientific-notation-or-trailing-zeros
+    ostringstream strout ;
+    strout << fixed << x ;
+    string str = strout.str() ;
+    size_t end = str.find_last_not_of( '0' ) + 1 ;
+    str=str.erase( end );
+    if (str.back()=='.') return str.substr(0, str.length() - 1);
+    return str;
+}
+
 
 template <typename T, size_t N>
 inline
@@ -37,21 +48,21 @@ string createDataFolder(paramstruct ps){
     //In the definition of folder, the addition has to START WITH A STRING! for the compiler to know what to do (left to right).
     string folder = "sim_data";
     if (ps.setPBC) folder += "/setPBC";
-    if (ps.Pointq) folder += "/pointq/drqop"+ toString(ps.drqop);
+    if (ps.Pointq) folder += "/pointq/drqop"+ numString(ps.drqop);
     if (ps.ranU) folder = folder + "/ranU";
     if (ps.mixU) folder += "/mixU";
-    if (ps.mixU || ps.ranU) folder += "/uratio" + toString(ps.uratio) + "/Cratio" + toString(ps.Cratio);
+    if (ps.mixU || ps.ranU) folder += "/uratio" + numString(ps.uratio) + "/Cratio" + numString(ps.Cratio);
     if (ps.ranRod) folder += "/ranRod";
-    if (ps.rand) folder += "/rand/d" + toString(ps.dvar);
+    if (ps.rand) folder += "/rand/d" + numString(ps.dvar);
     folder += "/" + ps.distribution;
     if (ps.includeSteric) folder = folder + "/steric";    //TODO steric2
     folder = folder
-            + "/dt" + toString(ps.timestep)
-            + "/t" + toString(ps.simtime)
-            + "/a" + toString(ps.polydiam)
-            + "/p" + toString(ps.particlesize)
+            + "/dt" + numString(ps.timestep)
+            + "/t" + numString(ps.simtime)
+            + "/a" + numString(ps.polydiam)
+            + "/p" + numString(ps.particlesize)
             + "/k" + range
-            + "/u" + toString(ps.ustrength);
+            + "/u" + numString(ps.ustrength);
     boost::filesystem::create_directories(folder);
     boost::filesystem::create_directory(folder + "/InstantValues");
     boost::filesystem::create_directory(folder + "/Coordinates");

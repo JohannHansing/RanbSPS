@@ -198,6 +198,86 @@ private:
         _boxsize[axis] = _b_array[axis][1];
         ifdebug(cout << "New b_array " << _b_array[axis][0] << "  " << _b_array[axis][1] << "  " << _b_array[axis][2] << endl;)
     }
+    
+    // ############### RanRod2 For rods distributed evenly between -b and +2b (equivalent to trueRan in SPSHI)
+    void inittrueRan(){
+        cout << "Distribution is trueRan: 36 evenly distributed rods..." << endl;
+        int i,j;
+        double xipos, xjpos;
+        for (int axis=0;axis<3;axis++){//axis 0 is x axis.
+            i = axis +1;
+            if (i==3) i=0;
+            j=3-(i+axis);
+            for (int abc=0;abc<3;abc++){//for i = axis + 1
+                for (int def=0;def<3;def++){// for j = axis + 2
+                    // Code from SPSHI CConfig.h
+                    // SO FAR SET INITAL RODS; SUCH THAT CENTRAL CELL * 1.7 IS EMPTY!
+                    //TODO ran_sign()*.15*zerotoone() + 0.5 + 1.35 * ran_sign() is between .15+1.35+0.5 = 2 and -.15+1.35+0.5 = 1.7 or between .15-1.35+0.5 = -0.7 and -.15-1.35+0.5 = -1
+                    double centerspace = (_pradius+_polyrad) / _bdef;
+                    double sidespace = (1.5 - centerspace);
+                    //double halfsidespace = (1.5 - centerspace)/2;
+                    //double middleofsidespace = halfsidespace + centerspace;
+                    xipos = (0.5 + ran_sign()*(  centerspace + zerotoone()*sidespace)) *_bdef;
+                    xjpos = (0.5 + ran_sign()*(  centerspace + zerotoone()*sidespace)) *_bdef;
+                    _rodarr[axis][abc][def] = CRod(axis, xipos, xjpos, _ranU, m_igen );
+                    // ifdebug(
+//                         cout << "axis = " << axis << ", xipos = " << xipos << ", xjpos = " << xjpos << " ][ ";
+//                     )
+                }
+            }
+            ifdebug(
+                cout << axis << endl;
+                printRodPos(axis);
+            )
+        }
+    }
+    
+    void updatetrueRan(int crossaxis,int exitmarker){//exitmarker is -1 for negative direction, or 1 for positive
+        //delete all polymers orthogonal to crossaxis, that are outside the box now
+        //update other polymer positions
+        bool overlaps;
+        int i,j;
+        i=crossaxis+1;
+        if (i==3) i =0;
+        j=3-(i+crossaxis);
+        // rotate around rods in cells abc and def and reassign
+        // shift positions of rods USING PREVIOUS b ARRAY _b_array_prev!
+        for (int abc=0; abc<3;abc++){
+            for (int def=0; def<3;def++){
+                // first move the rods
+                ifdebug(cout << "from:" << _rodarr[i][abc][def].coord[crossaxis] << endl;)
+                _rodarr[i][abc][def].coord[crossaxis] -= exitmarker*_bdef;
+                ifdebug(cout << "to:" << _rodarr[i][abc][def].coord[crossaxis] << endl;)
+                _rodarr[j][abc][def].coord[crossaxis] -= exitmarker*_bdef;
+                // then check if they are still within box
+                if ( abs(_rodarr[i][abc][def].coord[crossaxis] - _bdef/2.) > 1.5*_bdef) {
+                    ifdebug(cout << "reassign:" << _rodarr[i][abc][def].coord[crossaxis] << endl;)
+                    overlaps=true;
+                    while (overlaps){
+                        _rodarr[i][abc][def].coord[crossaxis] = atob(_bdef*exitmarker, _bdef*(exitmarker+1));  //i.e. (-1b,0) oder (1b,2b)
+                        _rodarr[i][abc][def].coord[j] = atob(-_bdef , 2*_bdef);
+                        overlaps= testTracerOverlap(crossaxis, j, _rodarr[i][abc][def].coord[crossaxis], _rodarr[i][abc][def].coord[j]);
+                        //cout << "Repeat?";
+                    }
+                    ifdebug(cout << "to:" << _rodarr[i][abc][def].coord[crossaxis] << endl;)
+                }
+                if ( abs(_rodarr[j][abc][def].coord[crossaxis] - _bdef/2.) > 1.5*_bdef) {
+                    overlaps=true;
+                    while (overlaps){
+                        _rodarr[j][abc][def].coord[crossaxis] = atob(_bdef*exitmarker, _bdef*(exitmarker+1));
+                        _rodarr[j][abc][def].coord[i] =  atob(-_bdef , 2*_bdef);
+                        overlaps= testTracerOverlap(crossaxis, i, _rodarr[j][abc][def].coord[crossaxis], _rodarr[j][abc][def].coord[i]);
+                    }
+                }
+            }
+        }
+        // ifdebug(
+        //     if (testOverlap()){
+        //         cout << "\nERROR still overlap after newrod init!" << endl;
+        //         //abort();
+        //     }
+        // )
+    }
 
 
     //TODOD
@@ -239,6 +319,8 @@ private:
             )
         }
     }
+    
+
 
 
 
@@ -485,15 +567,28 @@ private:
     }
 
     void printRodPos(int axis){
-        for (int irod=0;irod<_drods[axis].size();irod++){
-            for (int jrod=0;jrod<_drods[axis].size();jrod++){
-                double rx =_drods[axis][irod][jrod].coord[0];
-                double ry =_drods[axis][irod][jrod].coord[1];
-                double rz =_drods[axis][irod][jrod].coord[2];
-                cout << ",[" << rx << "," << ry << "," << rz << "]";
+        if (_rand){
+            for (int irod=0;irod<_drods[axis].size();irod++){
+                for (int jrod=0;jrod<_drods[axis].size();jrod++){
+                    double rx =_drods[axis][irod][jrod].coord[0];
+                    double ry =_drods[axis][irod][jrod].coord[1];
+                    double rz =_drods[axis][irod][jrod].coord[2];
+                    cout << ",[" << rx << "," << ry << "," << rz << "]";
+                }
             }
+            cout << "]," << endl;
         }
-        cout << "]," << endl;
+        else if (_ranRod){
+            for (int irod=0;irod<_rodarr[axis].size();irod++){
+                for (int jrod=0;jrod<_rodarr[axis].size();jrod++){
+                    double rx =_rodarr[axis][irod][jrod].coord[0];
+                    double ry =_rodarr[axis][irod][jrod].coord[1];
+                    double rz =_rodarr[axis][irod][jrod].coord[2];
+                    cout << ",[" << rx << "," << ry << "," << rz << "]";
+                }
+            }
+            cout << "]," << endl;
+        }
     }
 
     bool tracerInBox(){
