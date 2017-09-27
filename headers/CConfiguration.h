@@ -89,6 +89,9 @@ private:
     // Point Charge Stuff
     double _dr_q;
     
+    // ranU Stuff
+    double _patchsize;
+    
     
     //---------------------------- POTENTIALS ------------------------------
     double _uLJ;
@@ -437,7 +440,7 @@ private:
                         overlaps= testTracerOverlap(i, j, xipos, xjpos);
                         //cout << "Repeat?";
                     }
-                    CRod newRod = CRod(axis, xipos, xjpos, _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio );
+                    CRod newRod = CRod(axis, xipos, xjpos, _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio, _ps.N_patches);
                     _drods[axis][abcd][efgh] = newRod;
                 }
             }
@@ -473,7 +476,7 @@ private:
                 //Example: -_b_array[j][0] , 0
                    //      0 , _b_array[j][1]
                    //      _b_array[j][1], _b_array[j][1]+ _b_array[j][2]
-                _drods[i][abcd][3] = CRod(i, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio); // make a new rod with same axis
+                _drods[i][abcd][3] = CRod(i, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio, _ps.N_patches); // make a new rod with same axis
                 overlaps=true;
                 while (overlaps){
                     _drods[i][abcd][3].coord[crossaxis] = 2*_bdef + ran_norm();
@@ -483,7 +486,7 @@ private:
                         || testRodOverlap(i, crossaxis, j, _drods[i][abcd][3].coord[crossaxis], _drods[i][abcd][3].coord[j]);
                     //cout << "Repeat?";
                 }
-                _drods[j][3][abcd] = CRod(j, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio ); // make a new rod with same axis
+                _drods[j][3][abcd] = CRod(j, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio, _ps.N_patches ); // make a new rod with same axis
                 overlaps=true;
                 while (overlaps){
                     _drods[j][3][abcd].coord[crossaxis] = 2*_bdef + ran_norm();
@@ -509,7 +512,7 @@ private:
             cellInterval_aj = - _bdef;
             for (int abcd=0;abcd<4;abcd++){
                 rotate_right(_drods[i][abcd]);
-                _drods[i][abcd][0] = CRod(i, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio ); // make a new rod with same axis
+                _drods[i][abcd][0] = CRod(i, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio, _ps.N_patches ); // make a new rod with same axis
                 // new rod positions
                 overlaps=true;
                 while (overlaps){
@@ -519,7 +522,7 @@ private:
                         //TODO overlap
                         || testRodOverlap(i, crossaxis, j, _drods[i][abcd][0].coord[crossaxis], _drods[i][abcd][0].coord[j]);
                 }
-                _drods[j][0][abcd] = CRod(j, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio ); // make a new rod with same axis
+                _drods[j][0][abcd] = CRod(j, 0., 0., _ranU, m_igen, _Pointq, _dr_q, _ps.mixU, _ps.uratio, _ps.Cratio, _ps.N_patches ); // make a new rod with same axis
                 overlaps=true;
                 while (overlaps){
                     _drods[j][0][abcd].coord[crossaxis] = -_bdef + ran_norm();

@@ -27,8 +27,9 @@ private:
 public:
     int axis; // rod parallel to axis 0 = x, axis 1 = y, etc.
     Eigen::Vector3d coord; // Coordinate of rod in 2D plane orthogonal to axis. the coord parallel to axis is always 0. (see initiaion)
-    array <double,4> signs; //this array stores the signs of the charge along the polymer backbone (4 signs, for pbc similations)
-    array <bool,2> samesign;
+    vector <double> signs; //this array stores the signs of the charge along the polymer backbone (4 signs, for pbc similations)
+    vector <bool> samesign;
+    int N_patches;
     boost::mt19937 *_igen;
     
     // ratio stuff
@@ -39,29 +40,55 @@ public:
     double dz0_q = 0;
     
     CRod();
-    CRod(int ax, double xi, double xj, bool ranU, boost::mt19937 *igen, bool Pointq=false, double dr_q=0., bool mixU=false, double uratio_in=1., double Cratio_in=1);
+    CRod(int ax, double xi, double xj, bool ranU, boost::mt19937 *igen, bool Pointq=false, double dr_q=0., bool mixU=false, double uratio_in=1., double Cratio_in=1, int N_patches=3);
+//     void shiftSigns(int exitmarker){ //old version - only applicable to case of bol=1
+//         // When the particle leaves the central cell and the system is shifted, the signs along the polymer need to be shifted, too.
+//         if (exitmarker==1){
+//             signs[0]=signs[1];
+//             signs[1]=signs[2];
+//             //signs[2]=ran_sign();
+//             set_sign(signs[2]);
+//         }
+//         else{
+//             signs[2]=signs[1];
+//             signs[1]=signs[0];
+//             //signs[0]=ran_sign();
+//             set_sign(signs[0]);
+//         }
+//         checksamesign();
+//     }
     void shiftSigns(int exitmarker){
         // When the particle leaves the central cell and the system is shifted, the signs along the polymer need to be shifted, too.
         if (exitmarker==1){
-            signs[0]=signs[1];
-            signs[1]=signs[2];
-            //signs[2]=ran_sign();
-            set_sign(signs[2]);
+            // rotation to the left
+            std::rotate(signs.begin(), signs.begin() + N_patches/3, signs.end());
+            // set new signs
+            for (int i=2*N_patches/3; i<N_patches; i++){
+                set_sign(signs[i]);
+            }
         }
         else{
-            signs[2]=signs[1];
-            signs[1]=signs[0];
-            //signs[0]=ran_sign();
-            set_sign(signs[0]);
+            // rotate right
+            std::rotate(signs.rbegin(), signs.rbegin() + N_patches/3, signs.rend());
+            // set new signs
+            for (int i=0; i<N_patches/3; i++){
+                set_sign(signs[i]);
+            }
         }
         checksamesign();
     }
     
     
+//     void checksamesign(){ //old version - only applicable to case of bol=1
+//         // NOTE: Samesign check is not implemented for pbc!
+//         samesign[0] = ( signs[1]==signs[0] );
+//         samesign[1] = ( signs[1]==signs[2] );
+//     }
     void checksamesign(){
         // NOTE: Samesign check is not implemented for pbc!
-        samesign[0] = ( signs[1]==signs[0] );
-        samesign[1] = ( signs[1]==signs[2] );
+        for (int i=0; i<N_patches-1; i++){
+            samesign[i] = ( signs[i]==signs[i+1] );
+        }
     }
     
     int get_sign(){ return signs[1]; }

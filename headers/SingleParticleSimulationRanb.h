@@ -49,7 +49,7 @@ string createDataFolder(paramstruct ps){
     string folder = "sim_data";
     if (ps.setPBC) folder += "/setPBC";
     if (ps.Pointq) folder += "/pointq/drqop"+ numString(ps.drqop);
-    if (ps.ranU) folder = folder + "/ranU";
+    if (ps.ranU) folder = folder + "/ranU/bol" + numString(ps.bol);
     if (ps.mixU) folder += "/mixU";
     if (ps.mixU || ps.ranU) folder += "/uratio" + numString(ps.uratio) + "/Cratio" + numString(ps.Cratio);
     if (ps.ranRod) folder += "/ranRod";
@@ -84,6 +84,7 @@ void settingsFile(string folder, paramstruct ps){
     settingsfile << "rand " << ps.rand << endl;
     settingsfile << "includesteric " << ps.includeSteric << endl;
     settingsfile << "ranU " << ps.ranU  << endl;
+    settingsfile << "bol " << ps.bol  << endl;
     settingsfile << "p " << ps.particlesize << endl;
     settingsfile << "dt " << ps.timestep  << endl << "runs " << ps.runs << endl << "steps " << ps.steps << endl << "time: " << ps.timestep*ps.steps << endl;
     settingsfile << "k " << ps.urange << endl << "U_0 " << ps.ustrength << endl;

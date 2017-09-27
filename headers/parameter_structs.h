@@ -36,6 +36,8 @@ struct paramstruct {
     double drqop;
     double Cratio; // = Catt/Crep
     double uratio; //  = Uatt/Urep
+    int N_patches; // Number of patches along a "full" fiber (i.e. from end to end of simulation box)
+    int bol; // the boxsize over the patchlength b/l
 };
 
 

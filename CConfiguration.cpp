@@ -29,6 +29,7 @@ CConfiguration::CConfiguration( paramstruct ps ){
     _Pointq = ps.Pointq;
     _dr_q = ps.drqop * ps.particlesize; // 1.33 for alexa488 in dextran(-)
     _setPBC = ps.setPBC;
+    _patchsize = _bdef/ps.bol;
     _dvar = ps.dvar;
     _upot = 0;
     _mu_sto = sqrt( 2 * _timestep );                 //timestep for stochastic force
@@ -209,8 +210,8 @@ void CConfiguration::calcMobilityForces(){
         int plane = 3 - (i+k); //this is the current plane of the cylindrical coordinates
         double z1, z2, z1inv;
         if (_ranU){
-            z1 = 0.25 * _boxsize[plane];
-            z2 = _boxsize[plane] - z1;   //z is in cylindrical coordinates. This indicates above/below which value the exp potential is modifed for random signs.
+            z1 = 0.25 * _patchsize;
+            z2 = _patchsize - z1;   //z is in cylindrical coordinates. This indicates above/below which value the exp potential is modifed for random signs.
             z1inv = 1./z1;
         }
 
@@ -297,26 +298,47 @@ void CConfiguration::calcMobilityForces(){
             if (_ranU || _ps.mixU){
                 int abcd = j/4;
                 int efgh = j%4;
-                double sign = _drods[plane][abcd][efgh].signs[1];
+                CRod * currentrod = & _drods[plane][abcd][efgh];
+                double sign = currentrod->signs[1];
                 if (_setPBC){
                     // NOTE: Samesign check is not implemented for pbc!
                     int izpos=(int)((_ppos(plane)+10)/10.); //this is between 0 and 3
-                    sign = _drods[plane][abcd][efgh].signs[izpos];
+                    sign = currentrod->signs[izpos];
                 }
                 utmp *= sign;// attractive case: sign = uratio = uAtt/uRep
                 
                 frtmp *= sign;
                 if (_ranU && !_setPBC){
-                    if (_ppos(plane) > z2){
-                        if (! _drods[plane][abcd][efgh].samesign[1]){
-                            _f_mob(plane) += utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
-                            modifyPot(utmp, frtmp, (_boxsize[plane] - _ppos(plane)) * z1inv);
+                    //only perform complicated calculation, if patchsize is not equal to boxsize
+                    if (true){//(_ps.N_patches!=3){
+                        //calculate 'height' drz of the tracer wrt the current rod to determine which patch it faces
+                        unsigned int i_patch = (int)(_ppos(plane)+_bdef) / _patchsize; //+_bdef, since ppos goes from -bdef to 2bdef, but here we need 0 to 3bdef
+                        double drz = fmod(_ppos(plane)+_bdef,_patchsize);
+                        if (drz > z2){
+                            if (! currentrod->samesign[i_patch]){
+                                _f_mob(plane) += utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
+                                modifyPot(utmp, frtmp, (_patchsize - drz) * z1inv);
+                            }
+                        }
+                        else if (drz < z1){
+                            if (! currentrod->samesign[i_patch-1]){
+                                _f_mob(plane) -= utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
+                                modifyPot(utmp, frtmp, drz * z1inv);
+                            }
                         }
                     }
-                    else if (_ppos(plane) < z1){
-                        if (! _drods[plane][abcd][efgh].samesign[0]){
-                            _f_mob(plane) -= utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
-                            modifyPot(utmp, frtmp, _ppos(plane) * z1inv);
+                    else{
+                        if (_ppos(plane) > z2){
+                            if (! currentrod->samesign[1]){
+                                _f_mob(plane) += utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
+                                modifyPot(utmp, frtmp, (_boxsize[plane] - _ppos(plane)) * z1inv);
+                            }
+                        }
+                        else if (_ppos(plane) < z1){
+                            if (! currentrod->samesign[0]){
+                                _f_mob(plane) -= utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
+                                modifyPot(utmp, frtmp, _ppos(plane) * z1inv);
+                            }
                         }
                     }
                 }

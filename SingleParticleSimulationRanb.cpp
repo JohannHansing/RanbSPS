@@ -47,10 +47,20 @@ int main(int argc, const char* argv[]){
     ps.drqop = atof( argv[boolpar+9] );
     ps.uratio = atof( argv[boolpar+10] );   // = Uatt/Urep
     ps.Cratio = atof( argv[boolpar+11] );   // = Catt/Crep
+    ps.bol = atof( argv[boolpar+12] );; //this is the boxsize over the patchlength b/l
+    ps.N_patches = 3*ps.bol;
     if (ps.Cratio==0){
         // ps.Cratio==0 means that default has been set for Cratio and uratio in the job script. Default is 1 for both
         ps.uratio=1.; ps.Cratio=1;
         cout << "--> default: uratio=" << ps.uratio <<" and Cratio="<< ps.Cratio << endl;
+    }
+    
+    if (ps.setPBC){
+        if ( ps.bol != 1){
+            cout << "###########\nWarning: Ignoring invalid b/l input for simulations with PBC!\n##############" << endl;
+            ps.bol=1;
+        }
+        ps.N_patches=4;
     }
     
     // main loop parameters
