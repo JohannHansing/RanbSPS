@@ -49,7 +49,8 @@ string createDataFolder(paramstruct ps){
     string folder = "sim_data";
     if (ps.setPBC) folder += "/setPBC";
     if (ps.Pointq) folder += "/pointq/drqop"+ numString(ps.drqop);
-    if (ps.ranU) folder = folder + "/ranU/bol" + numString(ps.bol);
+    //if (ps.ranU) folder = folder + "/ranU/z1_k/bol" + numString(ps.bol);
+    if (ps.ranU) folder += "/ranU";
     if (ps.mixU) folder += "/mixU";
     if (ps.mixU || ps.ranU) folder += "/uratio" + numString(ps.uratio) + "/Cratio" + numString(ps.Cratio);
     if (ps.ranRod) folder += "/ranRod";

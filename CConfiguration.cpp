@@ -210,7 +210,7 @@ void CConfiguration::calcMobilityForces(){
         int plane = 3 - (i+k); //this is the current plane of the cylindrical coordinates
         double z1, z2, z1inv;
         if (_ranU){
-            z1 = 0.25 * _patchsize;
+            z1 = 0.25 * _patchsize; //default is 0.25 * _patchsize; Alternative depends on range: _potRange/_bdef * _patchsize;
             z2 = _patchsize - z1;   //z is in cylindrical coordinates. This indicates above/below which value the exp potential is modifed for random signs.
             z1inv = 1./z1;
         }
@@ -299,21 +299,15 @@ void CConfiguration::calcMobilityForces(){
                 int abcd = j/4;
                 int efgh = j%4;
                 CRod * currentrod = & _drods[plane][abcd][efgh];
-                double sign = currentrod->signs[1];
-                if (_setPBC){
-                    // NOTE: Samesign check is not implemented for pbc!
-                    int izpos=(int)((_ppos(plane)+10)/10.); //this is between 0 and 3
-                    sign = currentrod->signs[izpos];
-                }
+                unsigned int i_patch = (int)(_ppos(plane)+_bdef) / _patchsize; //+_bdef, since ppos goes from -bdef to 2bdef, but here we need 0 to 3bdef
+                double sign = currentrod->signs[i_patch];
                 utmp *= sign;// attractive case: sign = uratio = uAtt/uRep
-                
                 frtmp *= sign;
                 if (_ranU && !_setPBC){
                     //only perform complicated calculation, if patchsize is not equal to boxsize
-                    if (true){//(_ps.N_patches!=3){
+                    if (_ps.N_patches!=3){//only use this, if for special patchsizes
                         //calculate 'height' drz of the tracer wrt the current rod to determine which patch it faces
-                        unsigned int i_patch = (int)(_ppos(plane)+_bdef) / _patchsize; //+_bdef, since ppos goes from -bdef to 2bdef, but here we need 0 to 3bdef
-                        double drz = fmod(_ppos(plane)+_bdef,_patchsize);
+                        double drz = fmod(_ppos(plane)+_bdef,_patchsize); //+_bdef, since ppos goes from -bdef to 2bdef, but here we need 0 to 3bdef
                         if (drz > z2){
                             if (! currentrod->samesign[i_patch]){
                                 _f_mob(plane) += utmp * z1inv;              //this takes care of the derivative of the potential modification and resulting force
